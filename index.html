@@ -1,19 +1,27 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-theme="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mundial 2026 · Panel Interactivo (ISW-521)</title>
+
+  <!-- Bulma: framework 100% CSS (sin JavaScript) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
+  <!-- Iconos -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" />
+  <!-- Tipografía -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
+  <!-- Estilos propios (encima de Bulma) -->
   <link rel="stylesheet" href="css/styles.css" />
 </head>
 <body>
   <!--
-    Los scripts se cargan en ORDEN DE DEPENDENCIA. Se usan scripts clásicos
-    (no módulos ES) a propósito, para que la app también funcione abriendo el
-    archivo directamente. Aun así, lo recomendado es servirla con un servidor
-    local (ver README).
+    Scripts clásicos cargados en ORDEN DE DEPENDENCIA.
+    NO se tocan store.js / api.js / auth.js (núcleo de resiliencia ya probado).
   -->
   <script src="js/store.js"></script>
+  <script src="js/util.js"></script>
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/ui.js"></script>
