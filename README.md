@@ -1,37 +1,34 @@
 # Mundial 2026 · Panel Interactivo — ISW-521 (Categoría B)
 
-Aplicación JavaScript que implementa **los 5 subproyectos** del catálogo dentro de
-una sola página (SPA), compartiendo un mismo **núcleo de resiliencia**.
+Aplicación web (SPA) en JavaScript que consume la API REST pública del Mundial
+2026 (`worldcup26.ir`) y presenta cinco interfaces interactivas sobre un mismo
+núcleo de resiliencia (autenticación JWT, backoff, modo offline).
 
-> ⚠️ **Importante sobre la entrega.** El documento del proyecto habla del
-> "subproyecto **elegido**" (en singular) y la modalidad es *Individual*.
-> Esta app incluye los 5 por si tu profesor pidió presentar todos. **Confirma con
-> él** si basta con uno: si es así, puedes entregar solo esa vista + el núcleo.
+Construida con JavaScript puro (sin frameworks de JS) y **Bulma** para los
+estilos. La lógica de acceso a datos está separada de la presentación.
 
 ---
 
 ## ▶️ Cómo ejecutarlo
 
-La forma recomendada es servirlo con un servidor local (cualquiera sirve):
+La app es estática y la API remota no envía cabeceras CORS, por lo que se
+acompaña de un pequeño proxy local (`proxy.py`, solo Python estándar) que
+reenvía las peticiones agregando dichas cabeceras. Se necesitan dos procesos:
 
 ```bash
-# Opción 1: Python
+# Terminal 1 — servir la app
 python -m http.server 5500
-# luego abre http://localhost:5500
 
-# Opción 2: VS Code -> extensión "Live Server" -> clic derecho en index.html -> "Open with Live Server"
-
-# Opción 3: Node
-npx serve .
+# Terminal 2 — proxy CORS hacia la API
+python proxy.py
 ```
 
-1. Al abrir, aparece la pantalla de login. Si no tienes cuenta, pulsa
-   **"Regístrate"** y crea una con nombre, correo y contraseña.
-2. El token JWT se guarda en `localStorage` y dura ~84 días.
-3. Navega entre las 5 pestañas.
+Luego abrir **http://localhost:5500**.
 
-API real usada: `https://worldcup26.ir` (endpoints `/get/stadiums`, `/get/games`,
-`/get/teams`, `/get/groups`; auth en `/auth/register` y `/auth/authenticate`).
+La primera vez se crea una cuenta desde la propia pantalla de acceso
+(botón *Regístrate*): nombre, correo y contraseña. La API devuelve un token JWT
+que se guarda en `localStorage` (válido ~84 días); las siguientes veces basta
+con iniciar sesión.
 
 ---
 
@@ -40,76 +37,67 @@ API real usada: `https://worldcup26.ir` (endpoints `/get/stadiums`, `/get/games`
 ```
 worldcup-app/
 ├── index.html
-├── css/styles.css
+├── proxy.py              # puente CORS local hacia la API
+├── css/styles.css        # capa propia sobre Bulma (tema + acento dinámico)
 └── js/
-    ├── store.js      # localStorage: token, caché offline, preferencias
-    ├── api.js        # NÚCLEO: fetch + JWT + backoff + countdown + 401 + caché
-    ├── auth.js       # login / registro (obtención del token)
-    ├── ui.js         # presentación común: banner, modal de sesión, badges
-    ├── app.js        # arranque + router de pestañas
+    ├── store.js          # localStorage: token, caché por endpoint, preferencias
+    ├── util.js           # utilidades (normalización de respuestas, índices)
+    ├── api.js            # núcleo: fetch + JWT + backoff + countdown + 401 + caché
+    ├── auth.js           # registro / inicio de sesión (token JWT)
+    ├── ui.js             # presentación común: modal, banner, sub-tabs, chips
+    ├── app.js            # arranque + router de pestañas
     └── views/
-        ├── tour.js       # 2.1 Tour de Sedes      (scrollIntoView)
-        ├── agenda.js     # 2.2 Agenda Simultánea   (layout dividido + skeletons)
-        ├── timeline.js   # 2.3 Timeline Infinito   (IntersectionObserver)
-        ├── dashboard.js  # 2.4 Dashboard Fanático  (variables CSS + localStorage)
-        └── matriz.js     # 2.5 Matriz por Grupo    (cuadrícula 4x4, parcheo)
+        ├── tour.js       # Tour de Sedes       — scrollIntoView
+        ├── agenda.js     # Agenda Simultánea    — agrupación + layout dividido
+        ├── timeline.js   # Timeline Infinito    — IntersectionObserver
+        ├── dashboard.js  # Dashboard del Fanático — variables CSS + localStorage
+        └── matriz.js     # Matriz por Grupo     — cuadrícula 4x4 + parcheo
 ```
 
-La **lógica de fetch (`api.js`) está separada de la presentación**: `api.js`
-nunca toca el DOM, solo emite eventos (`wc:request-countdown`, `wc:session-expired`…)
-que `ui.js` escucha. Eso es lo que pide la rúbrica (separación fetch ↔ vista).
+`api.js` no manipula el DOM: emite eventos (countdown de reintentos, sesión
+expirada, éxito) que `ui.js` escucha y pinta. Así la lógica de red queda
+separada de la interfaz.
 
 ---
 
-## 🛡️ Dónde está cada requisito obligatorio (sección 1.5)
+## 🧭 Secciones
 
-| Requisito | Archivo / función |
+Cada sección despliega sus propias opciones al entrar:
+
+| Sección | Técnica de DOM | Sub-opciones |
+|---|---|---|
+| **Tour de Sedes** | `scrollIntoView` + estado de sede activa | Recorrido · Por país |
+| **Agenda Simultánea** | agrupación por fecha + columnas | chips de fecha · anterior/siguiente |
+| **Timeline Infinito** | `IntersectionObserver` (bloques de 10) | Todos · Jugados · Pendientes |
+| **Dashboard del Fanático** | variables CSS por equipo + favorito persistido | Resumen · Partidos · Grupo |
+| **Matriz por Grupo** | cuadrícula 4×4 cruzando 3 recursos | chips por grupo (A–L) |
+
+---
+
+## 🛡️ Arquitectura de resiliencia
+
+Todas las secciones comparten el mismo núcleo (`api.js` + `store.js`):
+
+- **JWT.** Cada petición a los endpoints de datos envía `Authorization: Bearer <token>`.
+- **`async/await`.** Todas las llamadas se resuelven con async/await (sin `.then`/`.catch`).
+- **401.** Si el token deja de ser válido, se limpia y se muestra un modal de
+  reautenticación; no se recarga la página.
+- **Backoff exponencial.** Ante 429/500 se reintenta con espera creciente
+  (1s, 2s, 4s, 8s); en 429 se muestra una cuenta atrás visible.
+- **Modo offline.** La última respuesta exitosa de cada endpoint se cachea en
+  `localStorage`; si una petición falla y hay copia, se muestra con un aviso de
+  datos no actualizados.
+
+---
+
+## 🌐 API
+
+Base: `worldcup26.ir` (a través del proxy local).
+
+| Recurso | Endpoint |
 |---|---|
-| **JWT en cada llamada** | `api.js → authHeaders()` añade `Authorization: Bearer <token>` |
-| **async/await exclusivo** | Todo el código; cero `.then()/.catch()` |
-| **401 sin recargar** | `api.js` limpia token + emite `SESSION_EXPIRED`; `ui.js` abre el modal; `app.js` recarga solo la vista |
-| **Backoff 500/429 + countdown** | `api.js → request()` y `waitWithCountdown()` (1s,2s,4s,8s) |
-| **Modo offline (localStorage)** | `api.js → load()` devuelve `{stale:true}`; `ui.staleBadge()` lo muestra |
-
-Prohibiciones (1.6): no hay `alert()`, ni `.then()/.catch()`, ni `location.reload()`.
-
----
-
-## 🎤 Guía para la DEFENSA (respóndelo con tus palabras)
-
-Estas son las preguntas del documento (sección 3.1) con la respuesta que da
-**tu** código. Estúdialas para poder explicarlas, no para memorizarlas.
-
-**¿Qué pasa si la API devuelve 500 al pedir `/get/games`?**
-`request()` detecta que 500 es reintentable y entra al `while` con backoff:
-espera 1s, 2s, 4s, 8s (emitiendo el countdown). Si tras 4 reintentos sigue
-fallando, lanza `HttpError(500)`; la vista cae a la caché de `localStorage`
-(badge "Datos no actualizados") o muestra su estado de error con reintento.
-
-**¿Por qué async/await y no .then/.catch en los eventos de scroll/clic?**
-El backoff necesita *pausar* entre reintentos. Con `await sleep(ms)` el flujo se
-lee secuencialmente (espera → reintenta) dentro de un `while`. Con `.then` habría
-que encadenar promesas recursivas, mucho menos legible. Además el proyecto lo
-prohíbe explícitamente.
-
-**¿Qué ocurre si el token expira mientras el IntersectionObserver sigue activo?**
-(Timeline) Los 104 partidos ya están en memoria; el observer **solo inserta DOM**,
-no hace fetch. Por eso un 401 no rompe el scroll infinito. El 401 solo se dispara
-al *pedir* datos, y ahí se limpia el token y se abre el modal de sesión.
-
-**¿Por qué no `window.location.reload()` para un error de sesión?**
-Recargar borra todo el estado de la interfaz (vista activa, scroll, favorito en
-memoria) y crea un parpadeo. En su lugar se muestra un modal: el usuario se
-reautentica y se recarga **solo la vista actual**, conservando el resto.
-
-**¿Qué pasa con clics repetidos antes de terminar la animación de scroll?**
-(Tour) Hay una bandera `scrolling`. Si haces clic en la *misma* sede mientras se
-anima, se ignora. Si haces clic en *otra*, `scrollIntoView` simplemente reapunta;
-no se abren dos animaciones en conflicto.
-
-### Pruebas en DevTools (sección 3.2)
-Para forzar errores en vivo: en la pestaña **Network** activa "Offline" (verás el
-modo caché/skeletons), o usa "throttling". Para un 401, borra `wc_token` de
-`Application → Local Storage` y dispara una petición → aparece el modal de sesión.
-En **Console/Network** podrás mostrar el código de estado, los reintentos del
-backoff y los tiempos de espera entre cada uno.
+| Autenticación | `POST /auth/register`, `POST /auth/authenticate` |
+| Sedes | `GET /get/stadiums` |
+| Equipos | `GET /get/teams` |
+| Grupos | `GET /get/groups` |
+| Partidos | `GET /get/games` |
