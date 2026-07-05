@@ -65,8 +65,9 @@
         setActive(id);
         var sec = sections.querySelector('[data-id="' + id + '"]');
         if (!sec) return;
-        // block:'nearest' -> desplaza solo el contenedor, no la página entera.
-        sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        // Sube la tarjeta hasta pegarla al borde superior del contenedor,
+        // desplazando SOLO el contenedor (la página no se mueve).
+        sections.scrollTo({ top: Math.max(0, sec.offsetTop - 6), behavior: 'smooth' });
       }
 
       stadiums.forEach(function (s) {
