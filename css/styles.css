@@ -94,3 +94,21 @@ body {
 
 /* ---------- Chips (fechas / grupos) ---------- */
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+/* ---------- Barra superior fija + scroll del recorrido ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: var(--bulma-scheme-main, #0e1117);
+  border-bottom: 1px solid var(--bulma-border-weak, #2b3340);
+}
+.app-hero { border-bottom: none; margin-bottom: 0; padding-bottom: 6px; }
+.main-tabs { margin-bottom: 0; }
+
+.tour-scroll {
+  max-height: 62vh; overflow-y: auto; position: relative;
+  border: 1px solid var(--bulma-border-weak, #2b3340);
+  border-radius: 12px; padding: 12px; background: rgba(255,255,255,.02);
+}
+.tour-scroll .stadium-section { scroll-margin-top: 8px; }
+.tour-scroll::-webkit-scrollbar { width: 10px; }
+.tour-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 8px; }

@@ -1,5 +1,7 @@
 /* ============================================================================
- * app.js  —  Arranque + router de pestañas (SPA), estilizado con Bulma
+ * app.js  —  Arranque + router de pestañas (SPA)
+ * El encabezado y las pestañas quedan fijos arriba (.topbar sticky); solo el
+ * contenido de la vista se desplaza.
  * ============================================================================ */
 (function (WC) {
   'use strict';
@@ -44,13 +46,16 @@
       a.addEventListener('click', function () { activate(t); });
       tabList.appendChild(li);
     });
-    var tabs = el('div', { class: 'tabs is-boxed main-tabs' }, [tabList]);
+    var tabs = el('div', { class: 'container' }, [el('div', { class: 'tabs is-boxed main-tabs' }, [tabList])]);
+
+    // Barra superior fija (encabezado + pestañas).
+    var topbar = el('div', { class: 'topbar' }, [hero, tabs]);
 
     viewRoot = el('div', { id: 'view-root' });
+    var content = el('div', { class: 'container', style: 'padding-top:18px;padding-bottom:60px' }, [viewRoot]);
 
-    var container = el('div', { class: 'container', style: 'padding-bottom:60px' }, [tabs, viewRoot]);
-    document.body.appendChild(hero);
-    document.body.appendChild(container);
+    document.body.appendChild(topbar);
+    document.body.appendChild(content);
   }
 
   function start() {

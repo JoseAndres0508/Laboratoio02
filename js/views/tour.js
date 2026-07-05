@@ -1,9 +1,8 @@
 /* ============================================================================
  * views/tour.js  —  2.1 Tour Virtual de Sedes
- * Recorrido: dropdown para elegir estadio -> scrollIntoView al elegido
- *            (muestra Nombre + País y los partidos jugados ahí).
- * Por país : botones de país; sin selección = todos los estadios en orden
- *            alfabético; con país = solo los de ese país.
+ * Recorrido: dropdown -> scrollIntoView DENTRO de un section con scroll propio
+ *            (la página no se mueve). Muestra Nombre + País y sus partidos.
+ * Por país : botones; sin selección = todos alfabético; con país = filtrado.
  * ========================================================================== */
 (function (WC) {
   'use strict';
@@ -23,7 +22,6 @@
       body.appendChild(WC.ui.errorNotice('No se pudieron cargar las sedes.', function () { root.innerHTML = ''; mount(root); }));
       return;
     }
-    // Estadios ordenados alfabéticamente por nombre.
     var stadiums = U.asArray(stadiumsRes.data).slice()
       .sort(function (a, b) { return (a.name_en || '').localeCompare(b.name_en || ''); });
 
@@ -41,7 +39,7 @@
       if (mode === 'pais') renderByCountry(); else renderRecorrido();
     }
 
-    // ---------- RECORRIDO: dropdown + scrollIntoView ----------
+    // ---------- RECORRIDO ----------
     function renderRecorrido() {
       var select = el('select', {});
       stadiums.forEach(function (s) {
@@ -52,10 +50,11 @@
         el('div', { class: 'select is-fullwidth' }, [select])
       ]));
 
-      var sections = el('div', {});
+      // Contenedor con scroll PROPIO: el desplazamiento ocurre aquí dentro.
+      var sections = el('section', { class: 'tour-scroll' });
       body.appendChild(sections);
 
-      var activeId = null, scrolling = false, timer = null;
+      var activeId = null;
       function setActive(id) {
         activeId = id;
         [].forEach.call(sections.querySelectorAll('.stadium-section'), function (sec) {
@@ -66,18 +65,15 @@
         setActive(id);
         var sec = sections.querySelector('[data-id="' + id + '"]');
         if (!sec) return;
-        scrolling = true;
-        sec.scrollIntoView({ behavior: 'smooth', block: 'start' });   // técnica requerida (2.1)
-        clearTimeout(timer); timer = setTimeout(function () { scrolling = false; }, 700);
+        // block:'nearest' -> desplaza solo el contenedor, no la página entera.
+        sec.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
 
       stadiums.forEach(function (s) {
-        // Encabezado: SOLO nombre y país.
         var card = el('div', { class: 'box stadium-section', dataset: { id: s.id } }, [
           el('h2', { class: 'title is-5 mb-1', text: (s.name_en || ('Sede ' + s.id)) }),
           el('p', { class: 'subtitle is-6 has-text-grey mb-3', text: (s.country_en || '—') })
         ]);
-        // Debajo: los grupos/partidos jugados en ese estadio.
         var list = el('div', {});
         if (gamesFailed) {
           list.appendChild(el('p', { class: 'has-text-danger', text: 'No se pudieron cargar los partidos de esta sede.' }));
@@ -94,13 +90,13 @@
       if (stadiums[0]) { select.value = stadiums[0].id; setActive(stadiums[0].id); }
     }
 
-    // ---------- POR PAÍS: botones + tarjetas ----------
+    // ---------- POR PAÍS ----------
     function renderByCountry() {
       var countries = [];
       stadiums.forEach(function (s) { var c = s.country_en || 'Otro'; if (countries.indexOf(c) < 0) countries.push(c); });
       countries.sort();
 
-      var selected = null; // null = Todos
+      var selected = null;
       var btnRow = el('div', { class: 'chips' });
       var grid = el('div', { class: 'columns is-multiline' });
       body.appendChild(btnRow);
@@ -116,7 +112,6 @@
       function update() {
         drawButtons();
         grid.innerHTML = '';
-        // Sin país => todos (ya vienen en orden alfabético). Con país => filtra.
         var list = stadiums.filter(function (s) { return selected === null || (s.country_en || 'Otro') === selected; });
         list.forEach(function (s) {
           var count = gamesFailed ? '—' : ((byStadium[s.id] || []).length);
