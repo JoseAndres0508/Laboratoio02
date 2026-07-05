@@ -5,6 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mundial 2026 · Panel Interactivo (ISW-521)</title>
 
+  <!-- Evita que el navegador cachee versiones viejas -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+
   <!-- Bulma: framework 100% CSS (sin JavaScript) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
   <!-- Iconos -->
@@ -12,24 +17,24 @@
   <!-- Tipografía -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet" />
-  <!-- Estilos propios (encima de Bulma) -->
-  <link rel="stylesheet" href="css/styles.css" />
+  <!-- Estilos propios (?v=3 fuerza recarga y evita caché vieja) -->
+  <link rel="stylesheet" href="css/styles.css?v=3" />
 </head>
 <body>
   <!--
-    Scripts clásicos cargados en ORDEN DE DEPENDENCIA.
-    NO se tocan store.js / api.js / auth.js (núcleo de resiliencia ya probado).
+    Scripts en orden de dependencia. El ?v=3 al final de cada uno obliga al
+    navegador a bajarlos frescos (no la copia vieja en caché).
   -->
-  <script src="js/store.js"></script>
-  <script src="js/util.js"></script>
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/views/tour.js"></script>
-  <script src="js/views/agenda.js"></script>
-  <script src="js/views/timeline.js"></script>
-  <script src="js/views/dashboard.js"></script>
-  <script src="js/views/matriz.js"></script>
-  <script src="js/app.js"></script>
+  <script src="js/store.js?v=3"></script>
+  <script src="js/util.js?v=3"></script>
+  <script src="js/api.js?v=3"></script>
+  <script src="js/auth.js?v=3"></script>
+  <script src="js/ui.js?v=3"></script>
+  <script src="js/views/tour.js?v=3"></script>
+  <script src="js/views/agenda.js?v=3"></script>
+  <script src="js/views/timeline.js?v=3"></script>
+  <script src="js/views/dashboard.js?v=3"></script>
+  <script src="js/views/matriz.js?v=3"></script>
+  <script src="js/app.js?v=3"></script>
 </body>
 </html>
