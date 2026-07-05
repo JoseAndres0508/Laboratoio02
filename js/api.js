@@ -17,7 +17,7 @@
 (function (WC) {
   'use strict';
 
-  var API_BASE = 'https://worldcup26.ir';
+  var API_BASE = 'http://localhost:3001';
 
   // Estados que justifican un reintento automático con backoff.
   var RETRYABLE = { 429: true, 500: true, 502: true, 503: true, 504: true };
