@@ -1,113 +1,101 @@
 /* ============================================================================
- * views/matriz.js  —  2.5 Matriz de Enfrentamientos por Grupo
- * ----------------------------------------------------------------------------
- * Técnica de DOM: cuadrícula interactiva 4x4 por grupo cruzando TRES recursos.
- * Endpoints: GET /get/groups, GET /get/teams, GET /get/games.
- *
- * Reto de resiliencia: si /get/games falla, la matriz se dibuja COMPLETA con
- * todas las celdas en "Pendiente" (no se oculta). Al recuperar la conexión,
- * solo se PARCHEAN las celdas afectadas; la matriz no se reconstruye.
+ * views/matriz.js  —  2.5 Matriz de Enfrentamientos  (Bulma + chips de grupo)
+ * Técnica requerida: cuadrícula 4x4 por grupo cruzando 3 recursos; diagonal
+ * deshabilitada; parcheo de celdas (no reconstruir).
+ * Sub-opciones: chips A–L (+ Todos) para elegir qué grupo(s) ver.
+ * Resiliencia: dibuja todo "Pendiente" y parchea al recuperar los partidos.
  * ========================================================================== */
 (function (WC) {
   'use strict';
-  var el = WC.ui.el;
-  var staleBadge = WC.ui.staleBadge;
+  var el = WC.ui.el, U = WC.util;
 
   async function mount(root) {
-    root.appendChild(el('h1', { class: 'view-title', text: 'Matriz de Enfrentamientos por Grupo' }));
-
-    var container = el('div', { class: 'matriz-container' });
+    var chipsRow = el('div', { class: 'chips' });
+    root.appendChild(chipsRow);
+    var container = el('div', { class: 'columns is-multiline' });
     root.appendChild(container);
+    var note = el('div', { class: 'mt-3' });
+    root.appendChild(note);
 
     var groupsRes = await WC.api.load('/get/groups');
     var teamsRes = await WC.api.load('/get/teams');
-
     if (!groupsRes.ok || !teamsRes.ok) {
-      container.appendChild(el('div', { class: 'error-box', text: 'No se pudieron cargar grupos/equipos.' }));
-      var retry = el('button', { class: 'btn', text: 'Reintentar' });
-      retry.addEventListener('click', function () { root.innerHTML = ''; mount(root); });
-      container.appendChild(retry);
+      container.appendChild(WC.ui.errorNotice('No se pudieron cargar grupos/equipos.', function () { root.innerHTML = ''; mount(root); }));
       return;
     }
-    if (groupsRes.stale || teamsRes.stale) root.insertBefore(staleBadge(), container);
+    if (groupsRes.stale || teamsRes.stale) root.insertBefore(WC.ui.staleBadge(), chipsRow);
 
-    function teamLabel(id) {
-      var t = teamsRes.data.find(function (x) { return x.id === id; });
-      return t ? (t.fifa_code || t.name_en) : id;
+    var groups = U.asArray(groupsRes.data);
+    var teamsIndex = U.indexById(U.asArray(teamsRes.data));
+    function label(id) { var t = teamsIndex[id]; return t ? (t.fifa_code || t.name_en || id) : id; }
+
+    var filter = 'ALL';
+    function drawChips() {
+      chipsRow.innerHTML = '';
+      chipsRow.appendChild(WC.ui.chip('Todos', filter === 'ALL', function () { filter = 'ALL'; renderGroups(); }));
+      groups.forEach(function (g) {
+        chipsRow.appendChild(WC.ui.chip('Grupo ' + g.group, filter === g.group, function () { filter = g.group; renderGroups(); }));
+      });
     }
 
-    // 1) Dibujar TODAS las matrices con celdas "Pendiente" (aunque games falle).
-    groupsRes.data.forEach(function (grp) {
-      container.appendChild(buildMatrix(grp, teamLabel));
-    });
-
-    // 2) Pedir partidos y PARCHAR solo las celdas afectadas (no reconstruir).
-    var note = el('div', { class: 'matriz-note' });
-    root.appendChild(note);
+    function renderGroups() {
+      drawChips();
+      container.innerHTML = '';
+      groups.filter(function (g) { return filter === 'ALL' || g.group === filter; })
+        .forEach(function (grp) { container.appendChild(buildMatrix(grp, label)); });
+      runPatch();
+    }
 
     async function runPatch() {
       var failed = await patchWithGames(container);
       note.innerHTML = '';
       if (failed) {
-        note.appendChild(el('span', { class: 'muted',
-          text: 'Resultados no disponibles: todas las celdas quedan en “Pendiente”. ' }));
-        var rbtn = el('button', { class: 'btn btn-sm', text: 'Reintentar resultados' });
-        rbtn.addEventListener('click', runPatch); // re-parchea sin rehacer la matriz
-        note.appendChild(rbtn);
+        var box = el('div', { class: 'notification is-warning is-light' });
+        box.appendChild(el('span', { text: 'Resultados no disponibles: las celdas quedan en “Pendiente”. ' }));
+        var b = el('button', { class: 'button is-small is-warning ml-2' }, [el('span', { text: 'Reintentar resultados' })]);
+        b.addEventListener('click', runPatch);
+        box.appendChild(b);
+        note.appendChild(box);
       }
     }
-    await runPatch();
+
+    renderGroups();
   }
 
-  // Devuelve true si los partidos no se pudieron cargar.
   async function patchWithGames(container) {
     var gamesRes = await WC.api.load('/get/games');
     if (!gamesRes.ok) return true;
-    gamesRes.data.forEach(function (g) {
+    WC.util.asArray(gamesRes.data).forEach(function (g) {
       if (!g.finished) return;
       patchCell(container, g.home_team_id, g.away_team_id, g.home_score + ' - ' + g.away_score);
       patchCell(container, g.away_team_id, g.home_team_id, g.away_score + ' - ' + g.home_score);
     });
     return false;
   }
-
   function patchCell(container, rowId, colId, text) {
     var cell = container.querySelector('[data-cell="' + rowId + '_' + colId + '"]');
-    if (cell) {
-      cell.textContent = text;
-      cell.classList.add('played');
-      cell.classList.remove('pending');
-    }
+    if (cell) { cell.textContent = text; cell.classList.add('played'); cell.classList.remove('pending'); }
   }
 
-  function buildMatrix(grp, teamLabel) {
+  function buildMatrix(grp, label) {
     var ids = (grp.teams || []).map(function (t) { return t.team_id; });
-    var wrap = el('div', { class: 'matriz-group' }, [el('h2', { text: 'Grupo ' + grp.group })]);
-    var table = el('table', { class: 'matriz-table' });
-
+    var table = el('table', { class: 'table is-bordered is-narrow matriz-table' });
     var head = el('tr', {}, [el('th', { text: '' })]);
-    ids.forEach(function (id) { head.appendChild(el('th', { text: teamLabel(id) })); });
-    table.appendChild(head);
-
+    ids.forEach(function (id) { head.appendChild(el('th', { text: label(id) })); });
+    table.appendChild(el('thead', {}, [head]));
+    var tb = el('tbody', {});
     ids.forEach(function (rowId) {
-      var tr = el('tr', {}, [el('th', { class: 'row-head', text: teamLabel(rowId) })]);
+      var tr = el('tr', {}, [el('th', { text: label(rowId) })]);
       ids.forEach(function (colId) {
-        if (rowId === colId) {
-          // Diagonal: equipo contra sí mismo -> visualmente deshabilitada.
-          tr.appendChild(el('td', { class: 'cell diag', text: '—' }));
-        } else {
-          tr.appendChild(el('td', {
-            class: 'cell pending',
-            dataset: { cell: rowId + '_' + colId },
-            text: 'Pendiente'
-          }));
-        }
+        if (rowId === colId) tr.appendChild(el('td', { class: 'cell diag', text: '—' }));
+        else tr.appendChild(el('td', { class: 'cell pending', dataset: { cell: rowId + '_' + colId }, text: 'Pendiente' }));
       });
-      table.appendChild(tr);
+      tb.appendChild(tr);
     });
-
-    wrap.appendChild(table);
-    return wrap;
+    table.appendChild(tb);
+    return el('div', { class: 'column is-half' }, [
+      el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: 'Grupo ' + grp.group }), table])
+    ]);
   }
 
   WC.views = WC.views || {};

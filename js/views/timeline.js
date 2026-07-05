@@ -1,111 +1,100 @@
 /* ============================================================================
- * views/timeline.js  —  2.3 Timeline Infinito
- * ----------------------------------------------------------------------------
- * Técnica de DOM: IntersectionObserver sobre un centinela para insertar los
- * partidos de 10 en 10 a medida que el usuario hace scroll (sin paginar la
- * petición HTTP: se piden los 104 en UNA sola llamada).
- * Endpoint: GET /get/games.
- *
- * Reto de resiliencia: si la petición inicial falla, el observer NO queda
- * esperando: se muestra un error con botón de reintento (que dispara el
- * backoff). Al recuperar datos, la inserción arranca desde cero SIN duplicar.
- *
- * Defensa (token expira con el observer activo): los 104 partidos ya están en
- * memoria; el observer solo INSERTA DOM, no hace fetch. Por tanto un 401 no
- * afecta al scroll infinito; el 401 solo importa al pedir datos.
+ * views/timeline.js  —  2.3 Timeline Infinito  (Bulma + filtros)
+ * Técnica requerida: IntersectionObserver, bloques de 10, sin duplicar.
+ * Sub-opciones: filtros Todos / Jugados / Pendientes (reinician el timeline).
+ * Resiliencia: si falla la carga inicial, error + reintento con backoff;
+ * al recuperar, arranca desde cero sin duplicar.
  * ========================================================================== */
 (function (WC) {
   'use strict';
-  var el = WC.ui.el;
+  var el = WC.ui.el, U = WC.util;
   var BLOCK = 10;
-
   function parseDate(s) { var d = new Date(s); return isNaN(d) ? new Date(8640000000000000) : d; }
 
   async function mount(root) {
-    root.appendChild(el('h1', { class: 'view-title', text: 'Timeline Infinito' }));
+    var sub = WC.ui.subtabs([
+      { id: 'todos', label: 'Todos', icon: 'list' },
+      { id: 'jugados', label: 'Jugados', icon: 'circle-check' },
+      { id: 'pendientes', label: 'Pendientes', icon: 'clock' }
+    ], function (id) { filter = id; rebuild(); });
+    root.appendChild(sub.nav);
 
-    var status = el('div', { class: 'timeline-status' });
-    var list = el('div', { class: 'timeline-list' });
+    var status = el('p', { class: 'has-text-grey mb-3' });
+    var list = el('div', {});
     var sentinel = el('div', { class: 'sentinel' });
     root.appendChild(status); root.appendChild(list); root.appendChild(sentinel);
 
-    var games = [];
+    var allGames = [];
+    var view = [];
     var inserted = 0;
     var observer = null;
+    var filter = 'todos';
 
-    function reset() {
-      // Clave anti-duplicados: desconectamos el observer y vaciamos la lista
-      // antes de (re)empezar. Así un reintento nunca duplica partidos.
-      if (observer) { observer.disconnect(); observer = null; }
-      list.innerHTML = '';
-      inserted = 0;
+    function applyFilter() {
+      view = allGames.filter(function (g) {
+        if (filter === 'jugados') return g.finished;
+        if (filter === 'pendientes') return !g.finished;
+        return true;
+      });
     }
-
-    function insertNextBlock() {
-      var slice = games.slice(inserted, inserted + BLOCK);
+    function reset() {
+      if (observer) { observer.disconnect(); observer = null; }
+      list.innerHTML = ''; inserted = 0;
+    }
+    function insertNext() {
+      var slice = view.slice(inserted, inserted + BLOCK);
       slice.forEach(function (g) { list.appendChild(card(g)); });
       inserted += slice.length;
-      if (inserted >= games.length) {
-        if (observer) observer.disconnect(); // ya no hay más: liberamos el observer
-        status.textContent = 'Mostrando los ' + games.length + ' partidos.';
-      } else {
-        status.textContent = 'Mostrados ' + inserted + ' de ' + games.length + '…';
-      }
+      if (inserted >= view.length) { if (observer) observer.disconnect(); status.textContent = 'Mostrando los ' + view.length + ' partidos.'; }
+      else status.textContent = 'Mostrados ' + inserted + ' de ' + view.length + '…';
     }
-
     function startObserver() {
       observer = new IntersectionObserver(function (entries) {
-        entries.forEach(function (entry) { if (entry.isIntersecting) insertNextBlock(); });
+        entries.forEach(function (e) { if (e.isIntersecting) insertNext(); });
       }, { rootMargin: '150px' });
       observer.observe(sentinel);
     }
-
-    function begin() {
-      insertNextBlock();                       // primer bloque inmediato
-      if (inserted < games.length) startObserver();
+    function rebuild() {
+      reset(); applyFilter();
+      if (!view.length) { status.textContent = 'No hay partidos en este filtro.'; return; }
+      insertNext();
+      if (inserted < view.length) startObserver();
     }
 
     async function load() {
-      reset();
-      status.textContent = 'Cargando partidos…';
+      reset(); status.textContent = 'Cargando partidos…';
       try {
-        var data = await WC.api.request('/get/games'); // backoff automático dentro
-        games = data.slice().sort(function (a, b) { return parseDate(a.local_date) - parseDate(b.local_date); });
-        begin();
+        var data = await WC.api.request('/get/games');
+        allGames = U.asArray(data).slice().sort(function (a, b) { return parseDate(a.local_date) - parseDate(b.local_date); });
+        rebuild();
       } catch (err) {
-        if (err.status === 401) return; // el modal de sesión se encarga
+        if (err.status === 401) return;
         var cached = WC.store.readCache('/get/games');
         if (cached) {
-          status.innerHTML = '';
-          status.appendChild(WC.ui.staleBadge());
-          games = cached.data.slice().sort(function (a, b) { return parseDate(a.local_date) - parseDate(b.local_date); });
-          begin();
+          root.insertBefore(WC.ui.staleBadge(), status);
+          allGames = U.asArray(cached.data).slice().sort(function (a, b) { return parseDate(a.local_date) - parseDate(b.local_date); });
+          rebuild();
         } else {
-          showError();
+          status.textContent = '';
+          status.appendChild(WC.ui.errorNotice('No se pudieron cargar los partidos.', function () { status.innerHTML = ''; load(); }));
         }
       }
     }
-
-    function showError() {
-      status.innerHTML = '';
-      var box = el('div', { class: 'error-box' }, [
-        el('span', { text: 'No se pudieron cargar los partidos. ' })
-      ]);
-      var retry = el('button', { class: 'btn', text: 'Reintentar' });
-      retry.addEventListener('click', function () { load(); }); // dispara backoff
-      box.appendChild(retry);
-      status.appendChild(box);
-    }
-
     await load();
   }
 
   function card(g) {
     var score = g.finished ? (g.home_score + ' - ' + g.away_score) : 'Por jugar';
-    return WC.ui.el('div', { class: 'tl-card' }, [
-      WC.ui.el('div', { class: 'tl-date', text: g.local_date }),
-      WC.ui.el('div', { class: 'tl-main', text: 'Equipo ' + g.home_team_id + '  vs  Equipo ' + g.away_team_id }),
-      WC.ui.el('div', { class: 'tl-meta muted', text: 'Grupo ' + g.group + ' · Jornada ' + g.matchday + ' · ' + score })
+    var tagClass = g.finished ? 'is-success' : 'is-warning';
+    return WC.ui.el('div', { class: 'box tl-card mb-2 py-3' }, [
+      WC.ui.el('div', { class: 'is-flex is-justify-content-space-between is-align-items-center' }, [
+        WC.ui.el('div', {}, [
+          WC.ui.el('p', { class: 'has-text-grey is-size-7', text: g.local_date }),
+          WC.ui.el('p', { class: 'has-text-weight-semibold', text: 'Equipo ' + g.home_team_id + '  vs  Equipo ' + g.away_team_id }),
+          WC.ui.el('p', { class: 'is-size-7 has-text-grey', text: 'Grupo ' + g.group + ' · Jornada ' + g.matchday })
+        ]),
+        WC.ui.el('span', { class: 'tag ' + tagClass + ' is-medium', text: score })
+      ])
     ]);
   }
 
