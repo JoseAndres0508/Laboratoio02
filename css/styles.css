@@ -288,3 +288,7 @@ html[data-theme="light"] {
 
 /* Dorado: días con partido en el calendario */
 .cal-cell.active { border-color: var(--accent-3); color: var(--text); }
+
+/* Header centrado + botón de tema en la esquina */
+.hero-inner { position: relative; }
+.hero-inner .theme-toggle { position: absolute; top: 0; right: 0; }

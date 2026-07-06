@@ -40,13 +40,11 @@
     themeBtn.addEventListener('click', toggleTheme);
 
     var hero = el('section', { class: 'app-hero' }, [
-      el('div', { class: 'container' }, [
-        el('div', { class: 'is-flex is-justify-content-space-between is-align-items-center' }, [
-          el('div', {}, [
-            el('h1', { class: 'title is-3 brand-title', text: 'MUNDIAL 2026 · Panel Interactivo' }),
-            el('p', { class: 'subtitle is-6 has-text-grey', text: 'ISW-521 · Categoría B · Interfaces Interactivas y DOM Avanzado' })
-          ]),
-          themeBtn
+      el('div', { class: 'container hero-inner' }, [
+        themeBtn,
+        el('div', { class: 'has-text-centered' }, [
+          el('h1', { class: 'title is-3 brand-title', text: 'MUNDIAL 2026 · Panel Interactivo' }),
+          el('p', { class: 'subtitle is-6 has-text-grey', text: 'ISW-521 · Categoría B · Interfaces Interactivas y DOM Avanzado' })
         ])
       ])
     ]);
@@ -62,7 +60,7 @@
       a.addEventListener('click', function () { activate(t); });
       tabList.appendChild(li);
     });
-    var tabs = el('div', { class: 'container' }, [el('div', { class: 'tabs is-boxed main-tabs' }, [tabList])]);
+    var tabs = el('div', { class: 'container' }, [el('div', { class: 'tabs is-boxed is-centered main-tabs' }, [tabList])]);
 
     var topbar = el('div', { class: 'topbar' }, [hero, tabs]);
     viewRoot = el('div', { id: 'view-root' });
