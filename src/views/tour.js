@@ -132,7 +132,7 @@
   }
 
   function matchTag(g) {
-    var score = g.finished ? (g.home_score + ' - ' + g.away_score) : 'Por jugar';
+    var score = WC.util.isFinished(g) ? (g.home_score + ' - ' + g.away_score) : 'Por jugar';
     return WC.ui.el('div', { class: 'is-flex is-justify-content-space-between py-1', style: 'border-bottom:1px solid rgba(255,255,255,.06)' }, [
       WC.ui.el('span', { text: 'Grupo ' + g.group + ' · J' + g.matchday }),
       WC.ui.el('span', { class: 'has-text-grey', text: g.local_date + ' · ' + score })

@@ -107,7 +107,7 @@
   }
 
   function matchCard(g, nameOf) {
-    var main = g.finished
+    var main = WC.util.isFinished(g)
       ? (nameOf(g.home_team_id) + '  ' + g.home_score + ' - ' + g.away_score + '  ' + nameOf(g.away_team_id))
       : (nameOf(g.home_team_id) + '  vs  ' + nameOf(g.away_team_id));
     var hora = hourLabel(g.local_date);

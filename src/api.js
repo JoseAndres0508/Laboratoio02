@@ -17,7 +17,7 @@
 (function (WC) {
   'use strict';
 
-  var API_BASE = 'http://localhost:3001'; // -> proxy.py (evita el CORS de la API)
+  var API_BASE = ''; // dev: lo enruta el proxy de Vite (vite.config.js)
 
   // Estados que justifican un reintento automático con backoff.
   var RETRYABLE = { 429: true, 500: true, 502: true, 503: true, 504: true };

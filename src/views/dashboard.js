@@ -107,7 +107,7 @@
       var mine = games.filter(function (g) { return g.home_team_id === currentId || g.away_team_id === currentId; });
       if (!mine.length) { panel.appendChild(el('p', { class: 'has-text-grey', text: 'Sin partidos.' })); return; }
       mine.forEach(function (g) {
-        var score = g.finished ? (g.home_score + ' - ' + g.away_score) : 'vs';
+        var score = WC.util.isFinished(g) ? (g.home_score + ' - ' + g.away_score) : 'vs';
         panel.appendChild(el('div', { class: 'box py-3 is-flex is-justify-content-space-between' }, [
           el('span', { text: nameOf(g.home_team_id) + '  ' + score + '  ' + nameOf(g.away_team_id) }),
           el('span', { class: 'has-text-grey', text: g.local_date })

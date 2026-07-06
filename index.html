@@ -5,36 +5,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Mundial 2026 · Panel Interactivo (ISW-521)</title>
 
-  <!-- Evita que el navegador cachee versiones viejas -->
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
-  <meta http-equiv="Pragma" content="no-cache" />
-  <meta http-equiv="Expires" content="0" />
-
-  <!-- Bulma: framework 100% CSS (sin JavaScript) -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.2/css/bulma.min.css" />
-  <!-- Iconos -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.5.2/css/all.min.css" />
-  <!-- Tipografía -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet" />
-  <!-- Estilos propios (?v=7 fuerza recarga y evita caché vieja) -->
-  <link rel="stylesheet" href="css/styles.css?v=7" />
 </head>
 <body>
-  <!--
-    Scripts en orden de dependencia. El ?v=7 al final de cada uno obliga al
-    navegador a bajarlos frescos (no la copia vieja en caché).
-  -->
-  <script src="js/store.js?v=7"></script>
-  <script src="js/util.js?v=7"></script>
-  <script src="js/api.js?v=7"></script>
-  <script src="js/auth.js?v=7"></script>
-  <script src="js/ui.js?v=7"></script>
-  <script src="js/views/tour.js?v=7"></script>
-  <script src="js/views/agenda.js?v=7"></script>
-  <script src="js/views/timeline.js?v=7"></script>
-  <script src="js/views/dashboard.js?v=7"></script>
-  <script src="js/views/matriz.js?v=7"></script>
-  <script src="js/app.js?v=7"></script>
+  <script type="module" src="/src/main.js"></script>
 </body>
 </html>
