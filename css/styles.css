@@ -247,3 +247,44 @@ body { background: var(--bg); color: var(--text); font-family: var(--bulma-famil
 
 /* Botón de tema */
 .theme-toggle { border-radius: 999px; }
+
+/* ========================================================================
+   TEMA MEZCLA 1 · Fiesta en cancha  (sobrescribe al anterior)
+   Oswald (títulos) + DM Sans (texto) · coral principal, turquesa y dorado.
+   ======================================================================== */
+:root {
+  --bulma-family-primary: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Oswald', 'DM Sans', sans-serif;
+}
+:root, html[data-theme="dark"] {
+  --bg: #1B1512; --surface: #271E19; --surface-2: #2F241E;
+  --text: #FBEFE7; --muted: #C1A997; --border: #3A2C23;
+  --accent: #FF8354; --accent-2: #23CFC0; --accent-3: #FBCB3A;
+  --accent-soft: rgba(255,131,84,.16);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+html[data-theme="light"] {
+  --bg: #FFF9F0; --surface: #FFFFFF; --surface-2: #FBF1E6;
+  --text: #241A14; --muted: #8A7361; --border: #F1E6D8;
+  --accent: #FF6B35; --accent-2: #0FB5A6; --accent-3: #E0A80B;
+  --accent-soft: rgba(255,107,53,.12);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+
+/* Oswald es bold (700), no como Anton */
+.brand-title, .view-title, .tl-score, .stat-value, .bm-score { font-weight: 700; letter-spacing: .3px; }
+
+/* Texto sobre coral en blanco */
+.button.is-primary, .tag.is-primary { color: #fff; }
+.subtabs.tabs.is-toggle li.is-active a { color: #fff; }
+.cal-cell.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Turquesa: borde superior de las tarjetas */
+.accent-bar { border-top-color: var(--accent-2) !important; }
+
+/* Dorado: días con partido en el calendario */
+.cal-cell.active { border-color: var(--accent-3); color: var(--text); }
