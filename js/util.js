@@ -1,10 +1,5 @@
 /* ============================================================================
  * util.js  —  Utilidades pequeñas compartidas
- * ----------------------------------------------------------------------------
- * asArray(): la API a veces devuelve el arreglo directo y a veces envuelto en
- * un objeto (p. ej. { data: [...] }). Esta función siempre devuelve el arreglo,
- * sin importar el nombre de la propiedad que lo contenga. Así las vistas nunca
- * truenan con "forEach is not a function".
  * ========================================================================== */
 (function (WC) {
   'use strict';
@@ -13,14 +8,16 @@
     asArray: function (data) {
       if (Array.isArray(data)) return data;
       if (data && typeof data === 'object') {
-        // Devuelve la primera propiedad cuyo valor sea un arreglo
-        // (cubre { data:[...] }, { results:[...] }, { games:[...] }, etc.).
         var keys = Object.keys(data);
-        for (var i = 0; i < keys.length; i++) {
-          if (Array.isArray(data[keys[i]])) return data[keys[i]];
-        }
+        for (var i = 0; i < keys.length; i++) if (Array.isArray(data[keys[i]])) return data[keys[i]];
       }
       return [];
+    },
+
+    // La API manda finished como texto "TRUE"/"FALSE" (o a veces booleano).
+    isFinished: function (g) {
+      var f = g && g.finished;
+      return f === true || String(f).toUpperCase() === 'TRUE';
     },
 
     teamName: function (team, fallbackId) {
