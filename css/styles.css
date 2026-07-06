@@ -161,3 +161,14 @@ body {
 .cal-cell.selected { background: var(--accent); color: #fff; border: 1px solid var(--accent); cursor: pointer; font-weight: 700; }
 .day-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
 @media (max-width: 720px) { .agenda-grid2 { grid-template-columns: 1fr; } }
+
+/* ---------- Timeline: grid (reemplaza al carrusel) ---------- */
+.tl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
+.tl-card2 { min-width: 0; }
+.tl-sentinel-v { height: 1px; }
+
+/* ---------- Bracket: marcador + ganador ---------- */
+.bm-team { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bm-score { font-weight: 800; color: var(--accent); min-width: 16px; text-align: right; }
+.bm-win .bm-name { font-weight: 700; }

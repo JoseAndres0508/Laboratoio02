@@ -1,9 +1,9 @@
 /* ============================================================================
  * views/timeline.js  —  2.3 Timeline
- *   Todos      : carrusel de TODOS los partidos (scroll infinito de a 10).
- *   Jugados    : carrusel, solo partidos finalizados (con marcador).
- *   Pendientes : bracket de eliminatorias (de octavos a la final); muestra el
- *                equipo cuando se conoce y "Por definir" en el resto.
+ *   Todos      : grid de cards con scroll infinito (IntersectionObserver, 10).
+ *   Jugados    : mismo grid, solo partidos finalizados.
+ *   Pendientes : bracket de eliminatorias completo (dieciseisavos -> final),
+ *                con marcador si ya se jugó o "Por definir" si no.
  * ========================================================================== */
 (function (WC) {
   'use strict';
@@ -19,7 +19,7 @@
 
   async function mount(root) {
     var sub = WC.ui.subtabs([
-      { id: 'todos', label: 'Todos', icon: 'list' },
+      { id: 'todos', label: 'Todos', icon: 'table-cells' },
       { id: 'jugados', label: 'Jugados', icon: 'circle-check' },
       { id: 'pendientes', label: 'Pendientes', icon: 'sitemap' }
     ], function (id) { render(id); });
@@ -45,83 +45,75 @@
       if (observer) { observer.disconnect(); observer = null; }
       body.innerHTML = '';
       if (mode === 'pendientes') renderBracket();
-      else renderCarousel(mode === 'jugados');
+      else renderGrid(mode === 'jugados');
     }
 
-    // ---------- CARRUSEL (Todos / Jugados) ----------
-    function renderCarousel(onlyFinished) {
+    // ---------- GRID + scroll infinito (Todos / Jugados) ----------
+    function renderGrid(onlyFinished) {
       var list = onlyFinished ? allGames.filter(function (g) { return g.finished; }) : allGames;
-
       var status = el('p', { class: 'has-text-grey is-size-7 mb-2' });
-      var track = el('div', { class: 'tl-carousel' });
-      var sentinel = el('div', { class: 'tl-sentinel' });
-      track.appendChild(sentinel);
-
-      var controls = el('div', { class: 'is-flex is-justify-content-space-between is-align-items-center mb-2' }, [
-        status,
-        el('div', {}, [
-          arrow('angle-left', function () { track.scrollBy({ left: -370, behavior: 'smooth' }); }),
-          arrow('angle-right', function () { track.scrollBy({ left: 370, behavior: 'smooth' }); })
-        ])
-      ]);
-      body.appendChild(controls);
-      body.appendChild(track);
+      var grid = el('div', { class: 'tl-grid' });
+      var sentinel = el('div', { class: 'tl-sentinel-v' });
+      body.appendChild(status); body.appendChild(grid); body.appendChild(sentinel);
 
       if (!list.length) { status.textContent = 'No hay partidos en este filtro.'; return; }
 
       var inserted = 0;
       function insertNext() {
-        var slice = list.slice(inserted, inserted + BLOCK);
-        slice.forEach(function (g) { track.insertBefore(card(g, nameOf), sentinel); });
-        inserted += slice.length;
+        list.slice(inserted, inserted + BLOCK).forEach(function (g) { grid.appendChild(card(g, nameOf)); });
+        inserted = Math.min(inserted + BLOCK, list.length);
         status.textContent = 'Mostrados ' + inserted + ' de ' + list.length;
-        if (inserted >= list.length && observer) observer.disconnect();
+        if (inserted >= list.length && observer) { observer.disconnect(); observer = null; }
       }
       insertNext();
       if (inserted < list.length) {
         observer = new IntersectionObserver(function (entries) {
           entries.forEach(function (e) { if (e.isIntersecting) insertNext(); });
-        }, { root: track, rootMargin: '0px 200px' });
+        }, { rootMargin: '300px' });
         observer.observe(sentinel);
       }
     }
 
     // ---------- BRACKET (Pendientes) ----------
     function renderBracket() {
-      body.appendChild(el('p', { class: 'has-text-grey is-size-7 mb-3', text: 'Eliminatorias — el equipo aparece cuando se conoce; el resto queda “Por definir”.' }));
+      body.appendChild(el('p', { class: 'has-text-grey is-size-7 mb-3', text: 'Cuadro de eliminatorias — marcador si ya se jugó, o los equipos aún “Por definir”.' }));
 
-      // Partidos de eliminatoria = los que no pertenecen a un grupo.
       var knockout = allGames.filter(function (g) { return !g.group || String(g.group).trim() === ''; });
       var byType = {};
       knockout.forEach(function (g) { (byType[g.type || '?'] = byType[g.type || '?'] || []).push(g); });
-      var rounds = Object.keys(byType).map(function (t) { return { games: byType[t] }; })
-        .filter(function (r) { return r.games.length <= 8; })          // de octavos en adelante
-        .sort(function (a, b) { return b.games.length - a.games.length; });
 
-      if (!rounds.length) rounds = placeholderRounds();                // respaldo si no vienen en los datos
+      var rounds = Object.keys(byType).map(function (t) {
+        var gs = byType[t].slice().sort(function (a, b) { return orderKey(a.local_date) - orderKey(b.local_date); });
+        return { games: gs, minDate: orderKey(gs[0] ? gs[0].local_date : '') };
+      });
+
+      if (!rounds.length) rounds = placeholderRounds();
+
+      // Orden: ronda más grande a la izquierda; empate por fecha.
+      rounds.sort(function (a, b) {
+        if (b.games.length !== a.games.length) return b.games.length - a.games.length;
+        return a.minDate - b.minDate;
+      });
+
+      // Etiquetas (distingue 3er puesto de la Final cuando hay dos de 1 partido).
+      var totalOnes = rounds.filter(function (r) { return r.games.length === 1; }).length;
+      var seenOne = 0;
+      rounds.forEach(function (r) {
+        if (r.games.length === 1) { seenOne++; r.label = (totalOnes === 2 && seenOne === 1) ? '3er puesto' : 'Final'; }
+        else r.label = roundName(r.games.length);
+      });
 
       var wrap = el('div', { class: 'bracket' });
       rounds.forEach(function (r) {
         var col = el('div', { class: 'bracket-col' });
-        col.appendChild(el('p', { class: 'bracket-round', text: roundName(r.games.length) }));
-        r.games.forEach(function (g) {
-          col.appendChild(el('div', { class: 'bracket-match' }, [
-            el('div', { class: 'bm-team', text: nameOf(g.home_team_id) }),
-            el('div', { class: 'bm-team', text: nameOf(g.away_team_id) })
-          ]));
-        });
+        col.appendChild(el('p', { class: 'bracket-round', text: r.label }));
+        r.games.forEach(function (g) { col.appendChild(bracketMatch(g, nameOf)); });
         wrap.appendChild(col);
       });
       body.appendChild(wrap);
     }
 
     render('todos');
-  }
-
-  function arrow(dir, onClick) {
-    var b = WC.ui.el('button', { class: 'button is-dark ml-1', 'aria-label': dir }, [WC.ui.icon(dir)]);
-    b.addEventListener('click', onClick);
-    return b;
   }
 
   function card(g, nameOf) {
@@ -138,12 +130,27 @@
     ]);
   }
 
+  function bracketMatch(g, nameOf) {
+    var hw = g.finished && Number(g.home_score) > Number(g.away_score);
+    var aw = g.finished && Number(g.away_score) > Number(g.home_score);
+    return WC.ui.el('div', { class: 'bracket-match' }, [
+      teamRow(nameOf(g.home_team_id), g.finished ? g.home_score : '', hw),
+      teamRow(nameOf(g.away_team_id), g.finished ? g.away_score : '', aw)
+    ]);
+  }
+  function teamRow(name, score, win) {
+    return WC.ui.el('div', { class: 'bm-team' + (win ? ' bm-win' : '') }, [
+      WC.ui.el('span', { class: 'bm-name', text: name }),
+      WC.ui.el('span', { class: 'bm-score', text: (score === '' ? '' : String(score)) })
+    ]);
+  }
+
   function roundName(n) {
-    return ({ 8: 'Octavos', 4: 'Cuartos', 2: 'Semifinales', 1: 'Final' })[n] || ('Ronda (' + n + ')');
+    return ({ 16: 'Dieciseisavos', 8: 'Octavos', 4: 'Cuartos', 2: 'Semifinales', 1: 'Final' })[n] || ('Ronda (' + n + ')');
   }
   function placeholderRounds() {
     function fakes(n) { var a = []; for (var i = 0; i < n; i++) a.push({ home_team_id: null, away_team_id: null }); return a; }
-    return [{ games: fakes(8) }, { games: fakes(4) }, { games: fakes(2) }, { games: fakes(1) }];
+    return [{ games: fakes(16), minDate: 0 }, { games: fakes(8), minDate: 1 }, { games: fakes(4), minDate: 2 }, { games: fakes(2), minDate: 3 }, { games: fakes(1), minDate: 4 }];
   }
 
   WC.views = WC.views || {};
