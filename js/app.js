@@ -1,7 +1,5 @@
 /* ============================================================================
- * app.js  —  Arranque + router de pestañas (SPA)
- * El encabezado y las pestañas quedan fijos arriba (.topbar sticky); solo el
- * contenido de la vista se desplaza.
+ * app.js  —  Arranque + router de pestañas (SPA) + botón de tema claro/oscuro
  * ============================================================================ */
 (function (WC) {
   'use strict';
@@ -15,7 +13,7 @@
     { id: 'matriz', label: 'Matriz por Grupo', icon: 'table-cells' }
   ];
 
-  var viewRoot, tabList, current = null;
+  var viewRoot, tabList, themeBtn, current = null;
 
   function activate(tab) {
     current = tab;
@@ -25,13 +23,31 @@
   }
   function reloadCurrent() { activate(current || TABS[0]); }
 
+  // ---- Tema claro/oscuro ----
+  function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
+  function refreshThemeBtn() {
+    if (!themeBtn) return;
+    var dark = currentTheme() === 'dark';
+    themeBtn.innerHTML = '';
+    themeBtn.appendChild(el('span', { class: 'icon' }, [el('i', { class: 'fas fa-' + (dark ? 'sun' : 'moon') })]));
+    themeBtn.setAttribute('title', dark ? 'Cambiar a claro' : 'Cambiar a oscuro');
+  }
+  function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); WC.store.setPref('theme', t); refreshThemeBtn(); }
+  function toggleTheme() { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
+
   function buildShell() {
+    themeBtn = el('button', { class: 'button is-dark is-small theme-toggle', 'aria-label': 'Cambiar tema' });
+    themeBtn.addEventListener('click', toggleTheme);
+
     var hero = el('section', { class: 'app-hero' }, [
       el('div', { class: 'container' }, [
-        el('h1', { class: 'title is-3 brand-title' }, [
-          el('span', { class: 'brand-ball', text: '⚽ ' }), 'Mundial 2026 · Panel Interactivo'
-        ]),
-        el('p', { class: 'subtitle is-6 has-text-grey', text: 'ISW-521 · Categoría B · Interfaces Interactivas y DOM Avanzado' })
+        el('div', { class: 'is-flex is-justify-content-space-between is-align-items-center' }, [
+          el('div', {}, [
+            el('h1', { class: 'title is-3 brand-title', text: 'MUNDIAL 2026 · Panel Interactivo' }),
+            el('p', { class: 'subtitle is-6 has-text-grey', text: 'ISW-521 · Categoría B · Interfaces Interactivas y DOM Avanzado' })
+          ]),
+          themeBtn
+        ])
       ])
     ]);
 
@@ -48,23 +64,24 @@
     });
     var tabs = el('div', { class: 'container' }, [el('div', { class: 'tabs is-boxed main-tabs' }, [tabList])]);
 
-    // Barra superior fija (encabezado + pestañas).
     var topbar = el('div', { class: 'topbar' }, [hero, tabs]);
-
     viewRoot = el('div', { id: 'view-root' });
     var content = el('div', { class: 'container', style: 'padding-top:18px;padding-bottom:60px' }, [viewRoot]);
 
     document.body.appendChild(topbar);
     document.body.appendChild(content);
+    refreshThemeBtn();
   }
 
   function start() {
+    var saved = WC.store.getPref('theme');
+    if (saved) document.documentElement.setAttribute('data-theme', saved);
+
     buildShell();
     WC.ui.wireBannerToApi();
     WC.ui.setAuthSuccessHandler(reloadCurrent);
-    window.addEventListener(WC.api.EVENTS.SESSION_EXPIRED, function () {
-      WC.ui.showAuthOverlay({ expired: true });
-    });
+    window.addEventListener(WC.api.EVENTS.SESSION_EXPIRED, function () { WC.ui.showAuthOverlay({ expired: true }); });
+
     if (WC.auth.isLoggedIn()) activate(TABS[0]);
     else WC.ui.showAuthOverlay({ expired: false });
   }

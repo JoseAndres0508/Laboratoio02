@@ -172,3 +172,78 @@ body {
 .bm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bm-score { font-weight: 800; color: var(--accent); min-width: 16px; text-align: right; }
 .bm-win .bm-name { font-weight: 700; }
+
+/* ========================================================================
+   TEMA MUNDIAL 2026 — Anton (títulos) + Work Sans (texto)
+   Paleta: verde césped, coral y dorado, en versión clara y oscura.
+   El botón claro/oscuro alterna html[data-theme].
+   ======================================================================== */
+:root {
+  --bulma-family-primary: 'Work Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Anton', 'Work Sans', sans-serif;
+}
+:root, html[data-theme="dark"] {
+  --bg: #0A1A12; --surface: #12271C; --surface-2: #173021;
+  --text: #E9F6EE; --muted: #86AB97; --border: #1E3C2B;
+  --accent: #22C58A; --accent-2: #FF8354; --accent-3: #FBCB3A;
+  --accent-soft: rgba(34,197,138,.15);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+html[data-theme="light"] {
+  --bg: #F4FBF7; --surface: #FFFFFF; --surface-2: #ECF6F0;
+  --text: #0C2418; --muted: #5E7D6E; --border: #DCEBE3;
+  --accent: #0E9F6E; --accent-2: #FF6B35; --accent-3: #EAB308;
+  --accent-soft: rgba(14,159,110,.12);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+
+body { background: var(--bg); color: var(--text); font-family: var(--bulma-family-primary); }
+
+/* Tipografía display (Anton) para marca, títulos de vista y números grandes */
+.brand-title, .view-title, .tl-score, .stat-value, .bm-score { font-family: var(--font-display); font-weight: 400; letter-spacing: .6px; }
+
+/* Texto */
+.has-text-grey, .subtitle.has-text-grey, .has-text-grey-light { color: var(--muted) !important; }
+.title, strong { color: var(--text); }
+.accent-text { color: var(--accent) !important; }
+.accent-bar { border-top: 3px solid var(--accent) !important; }
+
+/* Superficies */
+.box { background-color: var(--surface); border: .5px solid var(--border); box-shadow: none; color: var(--text); }
+.input, .textarea, .select select { background-color: var(--surface); border-color: var(--border); color: var(--text); }
+.table { background: transparent; color: var(--text); }
+.table th, .table td { border-color: var(--border); color: var(--text); }
+.table.is-striped tbody tr:nth-child(even) { background: var(--surface-2); }
+
+/* Botones */
+.button.is-dark { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+.button.is-dark:hover { border-color: var(--accent); color: var(--text); }
+.button.is-primary { background: var(--accent); border-color: var(--accent); color: #04241A; }
+.button.is-primary:hover { filter: brightness(1.06); color: #04241A; }
+
+/* Tags / acentos */
+.tag.is-primary { background: var(--accent); color: #04241A; }
+.tag.is-primary.is-light { background: var(--accent-soft); color: var(--accent); }
+
+/* Pestañas principales */
+.main-tabs.tabs a { color: var(--text); }
+.main-tabs.tabs a:hover { background: var(--surface-2); border-bottom-color: var(--border); }
+.main-tabs.tabs li.is-active a { background: var(--surface); border-color: var(--border); border-bottom-color: var(--surface); color: var(--accent); }
+
+/* Sub-tabs */
+.subtabs.tabs.is-toggle a { border-color: var(--border); color: var(--text); }
+.subtabs.tabs.is-toggle li.is-active a { background: var(--accent); border-color: var(--accent); color: #04241A; }
+
+/* Barra superior */
+.topbar { background: var(--bg); border-bottom-color: var(--border); }
+
+/* Calendario (contraste correcto en ambos temas) */
+.cal-cell.active { color: var(--text); }
+.cal-cell.selected { background: var(--accent); color: #04241A; border-color: var(--accent); }
+
+/* Botón de tema */
+.theme-toggle { border-radius: 999px; }
