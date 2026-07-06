@@ -140,3 +140,24 @@ body {
 }
 .bm-team { padding: 9px 12px; font-size: .9rem; }
 .bm-team + .bm-team { border-top: 1px solid var(--bulma-border-weak, #2b3340); }
+
+/* ---------- Agenda: calendario + día ---------- */
+.agenda-grid2 { display: grid; grid-template-columns: minmax(240px, 300px) 1fr; gap: 22px; align-items: start; }
+.cal-month { margin-bottom: 18px; }
+.cal-title { text-align: center; font-weight: 700; margin-bottom: 10px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-dow { text-align: center; font-size: .68rem; color: var(--bulma-text-weak, #8b949e); padding-bottom: 2px; }
+.cal-cell {
+  aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; font-size: .85rem; color: var(--bulma-text-weak, #8b949e);
+}
+.cal-cell.empty { visibility: hidden; }
+.cal-cell.inactive { opacity: .3; }
+.cal-cell.active {
+  background: var(--bulma-scheme-main-bis, #1a212b);
+  border: 1px solid var(--accent); color: #fff; cursor: pointer; font-weight: 700;
+}
+.cal-cell.active:hover { background: var(--accent-soft, rgba(79,140,255,.16)); }
+.cal-cell.selected { background: var(--accent); color: #fff; border: 1px solid var(--accent); cursor: pointer; font-weight: 700; }
+.day-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .agenda-grid2 { grid-template-columns: 1fr; } }
