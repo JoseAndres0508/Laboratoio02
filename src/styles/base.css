@@ -383,3 +383,10 @@ body, .box, .title, .subtitle, .tag, .tl-card2, .bracket-match, .table td, .tabl
 .dash-card { position: relative; }
 
 .topbar > * { position: relative; z-index: 1; }
+
+/* Matriz: filas de enfrentamientos de eliminatoria */
+.ko-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--border); font-size: .9rem; }
+.ko-row:last-child { border-bottom: none; }
+.ko-side { flex: 1; }
+.ko-away { text-align: right; }
+.ko-mid { font-weight: 800; color: var(--accent); min-width: 54px; text-align: center; }
