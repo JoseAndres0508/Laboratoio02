@@ -85,7 +85,7 @@
     }
 
     function buildRound(name, gs) {
-      var list = el('div', {});
+      var list = el('div', { class: 'ko-grid' });
       gs.slice().sort(function (a, b) { return orderKey(a.local_date) - orderKey(b.local_date); }).forEach(function (g) {
         var mid = U.isFinished(g) ? (g.home_score + ' - ' + g.away_score) : 'vs';
         list.appendChild(el('div', { class: 'ko-row' }, [
@@ -94,7 +94,7 @@
           el('span', { class: 'ko-side ko-away', text: koName(g, 'away') })
         ]));
       });
-      return el('div', { class: 'column is-half' }, [el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: name }), list])]);
+      return el('div', { class: 'column is-full' }, [el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: name }), list])]);
     }
 
     function patchGroups() {

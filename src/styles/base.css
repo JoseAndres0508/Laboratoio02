@@ -390,3 +390,7 @@ body, .box, .title, .subtitle, .tag, .tl-card2, .bracket-match, .table td, .tabl
 .ko-side { flex: 1; }
 .ko-away { text-align: right; }
 .ko-mid { font-weight: 800; color: var(--accent); min-width: 54px; text-align: center; }
+
+/* Matriz: rondas de eliminatoria a ancho completo, en grid */
+.ko-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 20px; }
+.ko-grid .ko-row { border-bottom: 1px solid var(--border); }
