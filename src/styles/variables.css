@@ -40,6 +40,7 @@ html[data-theme="light"] {
   --text: #FBEFE7; --muted: #C1A997; --border: #3A2C23;
   --accent: #FF8354; --accent-2: #23CFC0; --accent-3: #FBCB3A;
   --accent-soft: rgba(255,131,84,.16);
+  --dot: rgba(255,255,255,.05); --blob-1: rgba(255,131,84,.06); --blob-2: rgba(35,207,192,.06); --blob-3: rgba(251,203,58,.05);
   --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
   --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
   --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
@@ -50,6 +51,7 @@ html[data-theme="light"] {
   --text: #241A14; --muted: #8A7361; --border: #F1E6D8;
   --accent: #FF6B35; --accent-2: #0FB5A6; --accent-3: #E0A80B;
   --accent-soft: rgba(255,107,53,.12);
+  --dot: rgba(0,0,0,.05); --blob-1: rgba(255,107,53,.07); --blob-2: rgba(15,181,166,.07); --blob-3: rgba(224,168,11,.07);
   --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
   --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
   --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);

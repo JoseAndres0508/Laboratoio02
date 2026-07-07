@@ -70,8 +70,14 @@
     viewRoot = el('div', { id: 'view-root' });
     var content = el('div', { class: 'container', style: 'padding-top:18px;padding-bottom:60px' }, [viewRoot]);
 
+    var footer = el('footer', { class: 'app-footer' }, [
+      el('div', { class: 'app-footer-stripe' }),
+      el('div', { class: 'container app-footer-text', text: 'Mundial 2026 · Panel Interactivo — ISW-521 · Datos: worldcup26.ir' })
+    ]);
+
     document.body.appendChild(topbar);
     document.body.appendChild(content);
+    document.body.appendChild(footer);
     refreshThemeBtn();
   }
 

@@ -394,3 +394,28 @@ body, .box, .title, .subtitle, .tag, .tl-card2, .bracket-match, .table td, .tabl
 /* Matriz: rondas de eliminatoria a ancho completo, en grid */
 .ko-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 20px; }
 .ko-grid .ko-row { border-bottom: 1px solid var(--border); }
+
+/* ========================================================================
+   Fondo con textura: puntos sutiles + manchas de color difuminadas
+   (var --dot y --blob* se definen por tema en variables.css)
+   ======================================================================== */
+body {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(circle at 15% 15%, var(--blob-1), transparent 40%),
+    radial-gradient(circle at 85% 10%, var(--blob-2), transparent 40%),
+    radial-gradient(circle at 80% 90%, var(--blob-3), transparent 42%),
+    radial-gradient(var(--dot) 1px, transparent 1.4px);
+  background-size: 100% 100%, 100% 100%, 100% 100%, 22px 22px;
+  background-attachment: fixed;
+}
+
+/* ========================================================================
+   Layout de altura completa + footer anclado abajo
+   ======================================================================== */
+html { min-height: 100%; }
+body { min-height: 100vh; display: flex; flex-direction: column; }
+
+.app-footer { margin-top: auto; width: 100%; }
+.app-footer-stripe { height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3)); }
+.app-footer-text { padding: 14px 16px; text-align: center; color: var(--muted); font-size: .8rem; }
