@@ -9,7 +9,7 @@
     { id: 'tour', label: 'Tour de Sedes', icon: 'location-dot' },
     { id: 'agenda', label: 'Agenda Simultánea', icon: 'calendar-days' },
     { id: 'timeline', label: 'Timeline', icon: 'stream' },
-    { id: 'dashboard', label: 'Dashboard Fanático', icon: 'heart' },
+    { id: 'dashboard', label: 'Dashboard Fanático', icon: 'gauge-high' },
     { id: 'matriz', label: 'Matriz por Grupo', icon: 'table-cells' }
   ];
 

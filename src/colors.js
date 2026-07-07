@@ -1,85 +1,346 @@
-/* ============================================================================
- * colors.js  —  Color reactivo del Dashboard según la bandera del equipo.
- * Extrae el color dominante de la bandera y deriva versiones legibles para
- * el fondo, los acentos y las LETRAS (globales) según el tema claro/oscuro.
- * ========================================================================== */
-(function (WC) {
-  'use strict';
-  function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
+/* ===========================================================================
+   styles.css — capa propia SOBRE Bulma (tema oscuro)
+   --accent lo repinta el Dashboard según el equipo elegido.
+   =========================================================================== */
+:root {
+  --accent: #4f8cff;
+  --accent-soft: rgba(79, 140, 255, .14);
+}
 
-  function rgbToHsl(r, g, b) {
-    r /= 255; g /= 255; b /= 255;
-    var mx = Math.max(r, g, b), mn = Math.min(r, g, b), h, s, l = (mx + mn) / 2;
-    if (mx === mn) { h = s = 0; }
-    else {
-      var d = mx - mn;
-      s = l > 0.5 ? d / (2 - mx - mn) : d / (mx + mn);
-      if (mx === r) h = (g - b) / d + (g < b ? 6 : 0);
-      else if (mx === g) h = (b - r) / d + 2;
-      else h = (r - g) / d + 4;
-      h /= 6;
-    }
-    return [h * 360, s * 100, l * 100];
-  }
-  function hslToHex(h, s, l) {
-    h = ((h % 360) + 360) % 360; s = clamp(s, 0, 100) / 100; l = clamp(l, 0, 100) / 100;
-    var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2, r = 0, g = 0, b = 0;
-    if (h < 60) { r = c; g = x; } else if (h < 120) { r = x; g = c; } else if (h < 180) { g = c; b = x; }
-    else if (h < 240) { g = x; b = c; } else if (h < 300) { r = x; b = c; } else { r = c; b = x; }
-    var to = function (v) { return ('0' + Math.round((v + m) * 255).toString(16)).slice(-2); };
-    return '#' + to(r) + to(g) + to(b);
-  }
-  function hexToRgb(hex) {
-    hex = String(hex).replace('#', '');
-    if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
-    var n = parseInt(hex, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-  }
-  function hslOf(hex) { var r = hexToRgb(hex); return rgbToHsl(r[0], r[1], r[2]); }
+html, body { min-height: 100%; }
+body {
+  font-family: "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background:
+    radial-gradient(1100px 500px at 85% -10%, rgba(79,140,255,.10), transparent 60%),
+    radial-gradient(900px 500px at 0% 0%, rgba(120,80,255,.08), transparent 55%);
+  background-attachment: fixed;
+}
 
-  // Derivados legibles según el tema
-  function textFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? hslToHex(c[0], clamp(c[1], 35, 70), 30) : hslToHex(c[0], clamp(c[1], 30, 60), 76); }
-  function accentFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? hslToHex(c[0], clamp(c[1], 55, 90), 45) : hslToHex(c[0], clamp(c[1], 55, 90), 62); }
-  function tintFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? hslToHex(c[0], clamp(c[1], 40, 70), 94) : hslToHex(c[0], clamp(c[1], 22, 45), 15); }
-  function innerFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? '#ffffff' : hslToHex(c[0], clamp(c[1], 18, 40), 11); }
-  function fallbackHex(id) { var h = (parseInt(id, 10) * 137.508) % 360; return hslToHex(h, 65, 50); }
+/* ---------- Encabezado / marca ---------- */
+.app-hero {
+  padding: 22px 0 10px;
+  border-bottom: 1px solid var(--bulma-border-weak, #2b3340);
+  margin-bottom: 18px;
+}
+.brand-title { font-weight: 800; letter-spacing: -.02em; }
+.brand-ball { color: var(--accent); }
 
-  // Color dominante de la bandera (o null si la imagen no se puede leer)
-  function extractFlag(url, cb) {
-    if (!url) { cb(null); return; }
-    var img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = function () {
-      try {
-        var c = document.createElement('canvas'); var w = c.width = 24, h = c.height = 24;
-        var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
-        var data = ctx.getImageData(0, 0, w, h).data, buckets = {};
-        for (var i = 0; i < data.length; i += 4) {
-          var r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3]; if (a < 128) continue;
-          var mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn;
-          if (mx > 238 && sat < 18) continue; // salta blancos
-          var k = (r >> 5) + '-' + (g >> 5) + '-' + (b >> 5);
-          buckets[k] = buckets[k] || { n: 0, r: 0, g: 0, b: 0 };
-          buckets[k].n++; buckets[k].r += r; buckets[k].g += g; buckets[k].b += b;
-        }
-        var best = null;
-        Object.keys(buckets).forEach(function (k) {
-          var o = buckets[k], r = o.r / o.n, g = o.g / o.n, b = o.b / o.n, mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn;
-          var score = o.n * (sat + 25);
-          if (!best || score > best.score) best = { score: score, r: r, g: g, b: b };
-        });
-        cb(best ? '#' + [best.r, best.g, best.b].map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join('') : null);
-      } catch (e) { cb(null); }
-    };
-    img.onerror = function () { cb(null); };
-    img.src = url;
-  }
+/* ---------- Tabs principales ---------- */
+.main-tabs { margin-bottom: 6px; }
+.main-tabs a { font-weight: 600; }
 
-  WC.colors = { textFor: textFor, accentFor: accentFor, tintFor: tintFor, innerFor: innerFor, fallbackHex: fallbackHex, extractFlag: extractFlag };
+/* ---------- Sub-tabs (opciones que se despliegan por sección) ---------- */
+.subtabs { margin: 6px 0 18px; }
 
-  // Aplica el color de las LETRAS a toda la app (según el tema).
-  WC.applyFavTextColor = function (dominantHex) {
-    var theme = document.documentElement.getAttribute('data-theme') || 'dark';
-    if (dominantHex) document.documentElement.style.setProperty('--text', textFor(dominantHex, theme));
-    else document.documentElement.style.removeProperty('--text');
-  };
-})(window.WC = window.WC || {});
+/* ---------- Utilidades de acento ---------- */
+.accent-text { color: var(--accent) !important; }
+.accent-bar { border-top: 3px solid var(--accent) !important; }
+.accent-left { border-left: 4px solid var(--accent) !important; }
+
+/* ---------- Badge "datos no actualizados" ---------- */
+.stale-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #4a3a00; color: #ffd873; border: 1px solid #8a6d1a;
+  border-radius: 999px; padding: 3px 12px; font-size: .78rem; font-weight: 600;
+  margin-bottom: 12px;
+}
+
+/* ---------- Banner de estado (countdown 429/500) ---------- */
+.status-banner {
+  position: fixed; left: 50%; bottom: 22px; transform: translateX(-50%);
+  padding: 12px 20px; border-radius: 999px; z-index: 60;
+  font-size: .9rem; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,.4);
+  background: #4a3a00; color: #ffd873; border: 1px solid #8a6d1a;
+  display: flex; align-items: center; gap: 10px;
+}
+.status-banner.hidden { display: none; }
+
+/* ---------- Skeletons ---------- */
+.skel { border-radius: 8px; background: linear-gradient(90deg,
+  rgba(255,255,255,.05) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.05) 63%);
+  background-size: 400% 100%; animation: shimmer 1.3s infinite; }
+.skel-line { height: 14px; margin: 8px 0; }
+.skel-card { height: 120px; }
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+/* ---------- Tour: barra lateral de sedes ---------- */
+.tour-sidebar { position: sticky; top: 12px; max-height: 78vh; overflow: auto; }
+.stadium-btn {
+  width: 100%; text-align: left; cursor: pointer; margin-bottom: 8px;
+  border-left: 3px solid transparent;
+}
+.stadium-btn.is-active { border-left-color: var(--accent); }
+.stadium-section { scroll-margin-top: 16px; }
+.stadium-section.is-active { outline: 2px solid var(--accent); }
+
+/* ---------- Timeline ---------- */
+.tl-card { border-left: 3px solid var(--accent); }
+.sentinel { height: 1px; }
+
+/* ---------- Dashboard ---------- */
+.dash-flag { width: 46px; height: 32px; object-fit: cover; border-radius: 5px; }
+.stat-box { text-align: center; }
+.stat-value { font-size: 1.9rem; font-weight: 800; color: var(--accent); line-height: 1; }
+
+/* ---------- Matriz ---------- */
+.matriz-table td.cell { text-align: center; min-width: 62px; }
+.matriz-table td.pending { color: var(--bulma-text-weak, #8b949e); font-style: italic; }
+.matriz-table td.played { font-weight: 800; color: var(--accent); }
+.matriz-table td.diag {
+  background: repeating-linear-gradient(45deg,
+    rgba(255,255,255,.04), rgba(255,255,255,.04) 6px,
+    transparent 6px, transparent 12px);
+}
+
+/* ---------- Chips (fechas / grupos) ---------- */
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; }
+
+/* ---------- Barra superior fija + scroll del recorrido ---------- */
+.topbar {
+  position: sticky; top: 0; z-index: 30;
+  background: var(--bulma-scheme-main, #0e1117);
+  border-bottom: 1px solid var(--bulma-border-weak, #2b3340);
+}
+.app-hero { border-bottom: none; margin-bottom: 0; padding-bottom: 6px; }
+.main-tabs { margin-bottom: 0; }
+
+.tour-scroll {
+  max-height: 62vh; overflow-y: auto; position: relative;
+  border: 1px solid var(--bulma-border-weak, #2b3340);
+  border-radius: 12px; padding: 12px; background: rgba(255,255,255,.02);
+}
+.tour-scroll .stadium-section { scroll-margin-top: 8px; }
+.tour-scroll::-webkit-scrollbar { width: 10px; }
+.tour-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 8px; }
+
+/* ---------- Timeline: carrusel ---------- */
+.tl-carousel { display: flex; gap: 12px; overflow-x: auto; padding: 6px 2px 14px; scroll-behavior: smooth; }
+.tl-card2 {
+  min-width: 172px; padding: 14px;
+  background: var(--bulma-scheme-main-bis, #1a212b);
+  border: 1px solid var(--bulma-border-weak, #2b3340); border-radius: 12px;
+}
+.tl-dt { font-size: .75rem; color: var(--bulma-text-weak, #8b949e); }
+.tl-teams { font-weight: 700; margin: 10px 0 6px; }
+.tl-score { font-size: 1.5rem; font-weight: 800; color: var(--accent); }
+.tl-por { font-size: .85rem; color: var(--bulma-text-weak, #8b949e); padding: 4px 0; }
+.tl-gj { font-size: .75rem; color: var(--bulma-text-weak, #8b949e); margin-top: 8px; }
+.tl-sentinel { min-width: 1px; }
+.tl-carousel::-webkit-scrollbar { height: 8px; }
+.tl-carousel::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 8px; }
+
+/* ---------- Timeline: bracket ---------- */
+.bracket { display: flex; gap: 26px; overflow-x: auto; padding: 8px 2px 16px; }
+.bracket-col { display: flex; flex-direction: column; justify-content: space-around; gap: 14px; min-width: 180px; }
+.bracket-round { text-align: center; font-weight: 700; color: var(--bulma-text-weak, #8b949e); margin-bottom: 4px; }
+.bracket-match {
+  background: var(--bulma-scheme-main-bis, #1a212b);
+  border: 1px solid var(--bulma-border-weak, #2b3340);
+  border-left: 3px solid var(--accent); border-radius: 8px; overflow: hidden;
+}
+.bm-team { padding: 9px 12px; font-size: .9rem; }
+.bm-team + .bm-team { border-top: 1px solid var(--bulma-border-weak, #2b3340); }
+
+/* ---------- Agenda: calendario + día ---------- */
+.agenda-grid2 { display: grid; grid-template-columns: minmax(240px, 300px) 1fr; gap: 22px; align-items: start; }
+.cal-month { margin-bottom: 18px; }
+.cal-title { text-align: center; font-weight: 700; margin-bottom: 10px; }
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+.cal-dow { text-align: center; font-size: .68rem; color: var(--bulma-text-weak, #8b949e); padding-bottom: 2px; }
+.cal-cell {
+  aspect-ratio: 1 / 1; display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; font-size: .85rem; color: var(--bulma-text-weak, #8b949e);
+}
+.cal-cell.empty { visibility: hidden; }
+.cal-cell.inactive { opacity: .3; }
+.cal-cell.active {
+  background: var(--bulma-scheme-main-bis, #1a212b);
+  border: 1px solid var(--accent); color: #fff; cursor: pointer; font-weight: 700;
+}
+.cal-cell.active:hover { background: var(--accent-soft, rgba(79,140,255,.16)); }
+.cal-cell.selected { background: var(--accent); color: #fff; border: 1px solid var(--accent); cursor: pointer; font-weight: 700; }
+.day-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+@media (max-width: 720px) { .agenda-grid2 { grid-template-columns: 1fr; } }
+
+/* ---------- Timeline: grid (reemplaza al carrusel) ---------- */
+.tl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(165px, 1fr)); gap: 12px; }
+.tl-card2 { min-width: 0; }
+.tl-sentinel-v { height: 1px; }
+
+/* ---------- Bracket: marcador + ganador ---------- */
+.bm-team { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.bm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bm-score { font-weight: 800; color: var(--accent); min-width: 16px; text-align: right; }
+.bm-win .bm-name { font-weight: 700; }
+
+/* ========================================================================
+   TEMA MUNDIAL 2026 — Anton (títulos) + Work Sans (texto)
+   Paleta: verde césped, coral y dorado, en versión clara y oscura.
+   El botón claro/oscuro alterna html[data-theme].
+   ======================================================================== */
+:root {
+  --bulma-family-primary: 'Work Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Anton', 'Work Sans', sans-serif;
+}
+:root, html[data-theme="dark"] {
+  --bg: #0A1A12; --surface: #12271C; --surface-2: #173021;
+  --text: #E9F6EE; --muted: #86AB97; --border: #1E3C2B;
+  --accent: #22C58A; --accent-2: #FF8354; --accent-3: #FBCB3A;
+  --accent-soft: rgba(34,197,138,.15);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+html[data-theme="light"] {
+  --bg: #F4FBF7; --surface: #FFFFFF; --surface-2: #ECF6F0;
+  --text: #0C2418; --muted: #5E7D6E; --border: #DCEBE3;
+  --accent: #0E9F6E; --accent-2: #FF6B35; --accent-3: #EAB308;
+  --accent-soft: rgba(14,159,110,.12);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+
+body { background: var(--bg); color: var(--text); font-family: var(--bulma-family-primary); }
+
+/* Tipografía display (Anton) para marca, títulos de vista y números grandes */
+.brand-title, .view-title, .tl-score, .stat-value, .bm-score { font-family: var(--font-display); font-weight: 400; letter-spacing: .6px; }
+
+/* Texto */
+.has-text-grey, .subtitle.has-text-grey, .has-text-grey-light { color: var(--muted) !important; }
+.title, strong { color: var(--text); }
+.accent-text { color: var(--accent) !important; }
+.accent-bar { border-top: 3px solid var(--accent) !important; }
+
+/* Superficies */
+.box { background-color: var(--surface); border: .5px solid var(--border); box-shadow: none; color: var(--text); }
+.input, .textarea, .select select { background-color: var(--surface); border-color: var(--border); color: var(--text); }
+.table { background: transparent; color: var(--text); }
+.table th, .table td { border-color: var(--border); color: var(--text); }
+.table.is-striped tbody tr:nth-child(even) { background: var(--surface-2); }
+
+/* Botones */
+.button.is-dark { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+.button.is-dark:hover { border-color: var(--accent); color: var(--text); }
+.button.is-primary { background: var(--accent); border-color: var(--accent); color: #04241A; }
+.button.is-primary:hover { filter: brightness(1.06); color: #04241A; }
+
+/* Tags / acentos */
+.tag.is-primary { background: var(--accent); color: #04241A; }
+.tag.is-primary.is-light { background: var(--accent-soft); color: var(--accent); }
+
+/* Pestañas principales */
+.main-tabs.tabs a { color: var(--text); }
+.main-tabs.tabs a:hover { background: var(--surface-2); border-bottom-color: var(--border); }
+.main-tabs.tabs li.is-active a { background: var(--surface); border-color: var(--border); border-bottom-color: var(--surface); color: var(--accent); }
+
+/* Sub-tabs */
+.subtabs.tabs.is-toggle a { border-color: var(--border); color: var(--text); }
+.subtabs.tabs.is-toggle li.is-active a { background: var(--accent); border-color: var(--accent); color: #04241A; }
+
+/* Barra superior */
+.topbar { background: var(--bg); border-bottom-color: var(--border); }
+
+/* Calendario (contraste correcto en ambos temas) */
+.cal-cell.active { color: var(--text); }
+.cal-cell.selected { background: var(--accent); color: #04241A; border-color: var(--accent); }
+
+/* Botón de tema */
+.theme-toggle { border-radius: 999px; }
+
+/* ========================================================================
+   TEMA MEZCLA 1 · Fiesta en cancha  (sobrescribe al anterior)
+   Oswald (títulos) + DM Sans (texto) · coral principal, turquesa y dorado.
+   ======================================================================== */
+:root {
+  --bulma-family-primary: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Oswald', 'DM Sans', sans-serif;
+}
+:root, html[data-theme="dark"] {
+  --bg: #1B1512; --surface: #271E19; --surface-2: #2F241E;
+  --text: #FBEFE7; --muted: #C1A997; --border: #3A2C23;
+  --accent: #FF8354; --accent-2: #23CFC0; --accent-3: #FBCB3A;
+  --accent-soft: rgba(255,131,84,.16);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+html[data-theme="light"] {
+  --bg: #FFF9F0; --surface: #FFFFFF; --surface-2: #FBF1E6;
+  --text: #241A14; --muted: #8A7361; --border: #F1E6D8;
+  --accent: #FF6B35; --accent-2: #0FB5A6; --accent-3: #E0A80B;
+  --accent-soft: rgba(255,107,53,.12);
+  --bulma-scheme-main: var(--surface); --bulma-scheme-main-bis: var(--surface-2); --bulma-scheme-main-ter: var(--surface-2);
+  --bulma-text-weak: var(--muted); --bulma-border: var(--border); --bulma-border-weak: var(--border);
+  --bulma-body-background-color: var(--bg); --bulma-body-color: var(--text);
+}
+
+/* Oswald es bold (700), no como Anton */
+.brand-title, .view-title, .tl-score, .stat-value, .bm-score { font-weight: 700; letter-spacing: .3px; }
+
+/* Texto sobre coral en blanco */
+.button.is-primary, .tag.is-primary { color: #fff; }
+.subtabs.tabs.is-toggle li.is-active a { color: #fff; }
+.cal-cell.selected { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+/* Turquesa: borde superior de las tarjetas */
+.accent-bar { border-top-color: var(--accent-2) !important; }
+
+/* Dorado: días con partido en el calendario */
+.cal-cell.active { border-color: var(--accent-3); color: var(--text); }
+
+/* Header centrado + botón de tema en la esquina */
+.hero-inner { position: relative; }
+.hero-inner .theme-toggle { position: absolute; top: 0; right: 0; }
+
+/* ========================================================================
+   DASHBOARD rediseñado + reactivo al color de la bandera + animaciones
+   ======================================================================== */
+/* Transiciones suaves de color (al cambiar equipo o tema) */
+body, .box, .title, .subtitle, .tag, .tl-card2, .bracket-match, .table td, .table th,
+.dash-card, .dash-stat, .dash-row, .stadium-section, .cal-cell {
+  transition: color .35s ease, background-color .35s ease, border-color .35s ease;
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* Relieve del header para darle dimensión (sin cambiar su color) */
+.topbar { box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+
+/* Layout centrado */
+.dash-wrap { max-width: 470px; margin: 0 auto; }
+.dash-wrap .label { text-align: center; }
+
+/* Tarjeta del favorito */
+.dash-card {
+  background: var(--dash-bg, var(--surface));
+  border: .5px solid var(--border); border-radius: 16px; overflow: hidden;
+  animation: dashIn .4s ease; transition: transform .2s ease, background-color .35s ease;
+}
+.dash-card:hover { transform: translateY(-2px); }
+.dash-stripe { height: 5px; background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3)); }
+.dash-inner { padding: 18px; }
+.dash-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.dash-flag2 { width: 46px; height: 32px; object-fit: cover; border-radius: 6px; border: .5px solid var(--border); }
+.dash-name { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: .3px; }
+.dash-tag { margin-left: auto; font-size: 12px; padding: 4px 12px; border-radius: 999px; background: var(--dash-accent, var(--accent)); color: #fff; }
+
+.dash-stats2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dash-stat { background: var(--dash-inner, var(--surface)); border-radius: 10px; padding: 14px 4px; text-align: center; }
+.dash-stat .v { font-family: var(--font-display); font-weight: 700; font-size: 26px; color: var(--dash-accent, var(--accent)); }
+.dash-stat .l { font-size: 11px; color: var(--muted); }
+.dash-row { background: var(--dash-inner, var(--surface)); border-radius: 8px; padding: 10px 12px; margin-top: 8px; display: flex; justify-content: space-between; font-size: 13px; }
+.dash-card .table { background: transparent; }
+.dash-card .table tr.dash-me { background: var(--dash-accent, var(--accent)); }
+.dash-card .table tr.dash-me td, .dash-card .table tr.dash-me strong { color: #fff; }
+
+/* Sub-tabs del dashboard con el color del equipo */
+.dash-wrap .subtabs.tabs.is-toggle li.is-active a { background: var(--dash-accent, var(--accent)); border-color: var(--dash-accent, var(--accent)); color: #fff; }
+
+@keyframes dashIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Dashboard: centrar sub-tabs y estilo del estado */
+.dash-wrap .subtabs > ul { justify-content: center; }
+.dash-status { margin-top: 14px; text-align: center; font-size: 13px; font-weight: 600; padding: 10px 12px; border-radius: 8px; background: var(--dash-inner, var(--surface)); color: var(--muted); }
+.dash-status.st-elim { color: #E5484D; }
+.dash-status.st-alive { color: #16A34A; }
+.dash-status.st-champ { color: var(--dash-accent, var(--accent)); font-size: 15px; }

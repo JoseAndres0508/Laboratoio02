@@ -1,12 +1,15 @@
 /* ============================================================================
- * views/dashboard.js  —  2.4 Dashboard del Fanático (rediseñado + reactivo)
- * Layout centrado. La tarjeta se tiñe con el color de la BANDERA del equipo,
- * y las letras de toda la app toman ese color (versión legible por tema).
+ * views/dashboard.js  —  2.4 Dashboard del Fanático (centrado + reactivo)
+ * Tarjeta teñida con el color de la bandera; letras globales del color del
+ * equipo. Resumen incluye el estado: quién eliminó a la selección, si sigue
+ * viva, si fue campeona o si no pasó de grupos.
  * ========================================================================== */
 (function (WC) {
   'use strict';
   var el = WC.ui.el, U = WC.util, C = WC.colors;
   var FAV_KEY = 'favTeam', COL_KEY = 'favColor';
+  var KO_LABEL = { r32: 'Dieciseisavos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semifinales', third: '3.º puesto', final: 'Final' };
+  function orderKey(s) { var d = new Date(s); return isNaN(d) ? 0 : d.getTime(); }
 
   async function mount(root) {
     var wrap = el('div', { class: 'dash-wrap' });
@@ -36,10 +39,9 @@
     var teamsIndex = U.indexById(teams);
     function nameOf(id) { return U.teamName(teamsIndex[id], id); }
 
-    // Selector
     var select = el('select', {});
     teams.forEach(function (t) { select.appendChild(el('option', { value: t.id, text: t.name_en })); });
-    selectorWrap.appendChild(el('label', { class: 'label is-small has-text-centered', text: '❤ Equipo favorito' }));
+    selectorWrap.appendChild(el('label', { class: 'label is-small has-text-centered', text: 'Equipo favorito' }));
     selectorWrap.appendChild(el('div', { class: 'select is-fullwidth' }, [select]));
 
     var section = 'resumen';
@@ -58,19 +60,14 @@
       wrap.style.setProperty('--dash-bg', C.tintFor(hex, theme));
       wrap.style.setProperty('--dash-inner', C.innerFor(hex, theme));
       WC.store.setPref(COL_KEY, hex);
-      WC.applyFavTextColor(hex); // letras de toda la app
+      WC.applyFavTextColor(hex);
     }
-
     function selectTeam(id) {
       currentId = id;
       WC.store.setPref(FAV_KEY, id);
-      applyTeamColor(C.fallbackHex(id));            // color inmediato
+      applyTeamColor(C.fallbackHex(id));
       var team = teamsIndex[id];
-      if (team && team.flag) {
-        C.extractFlag(team.flag, function (hex) {   // color real de la bandera
-          if (currentId === id) applyTeamColor(hex || C.fallbackHex(id));
-        });
-      }
+      if (team && team.flag) C.extractFlag(team.flag, function (hex) { if (currentId === id) applyTeamColor(hex || C.fallbackHex(id)); });
       renderPanel();
     }
 
@@ -79,13 +76,11 @@
       if (!currentId) return;
       if (stale) inner.appendChild(WC.ui.staleBadge());
       var team = teamsIndex[currentId];
-
       inner.appendChild(el('div', { class: 'dash-head' }, [
         team && team.flag ? el('img', { class: 'dash-flag2', src: team.flag, alt: '' }) : el('span'),
         el('div', { class: 'dash-name', text: team ? team.name_en : 'Equipo ' + currentId }),
         el('span', { class: 'dash-tag', text: 'Grupo ' + (team ? (team.groups || '?') : '?') })
       ]));
-
       if (section === 'resumen') renderResumen();
       else if (section === 'partidos') renderPartidos();
       else renderGrupo();
@@ -93,14 +88,19 @@
 
     function renderResumen() {
       var st = findStanding(groups, currentId);
-      if (!st) { inner.appendChild(el('p', { class: 'has-text-grey', text: 'Posición de grupo no disponible.' })); return; }
-      var grid = el('div', { class: 'dash-stats2' });
-      [['Puntos', st.pts], ['GF', st.gf], ['GC', st.ga]].forEach(function (p) {
-        var v = el('div', { class: 'v', text: '0' });
-        grid.appendChild(el('div', { class: 'dash-stat' }, [v, el('div', { class: 'l', text: p[0] })]));
-        countUp(v, p[1]);
-      });
-      inner.appendChild(grid);
+      if (st) {
+        var grid = el('div', { class: 'dash-stats2' });
+        [['Puntos', st.pts], ['GF', st.gf], ['GC', st.ga]].forEach(function (p) {
+          var v = el('div', { class: 'v', text: '0' });
+          grid.appendChild(el('div', { class: 'dash-stat' }, [v, el('div', { class: 'l', text: p[0] })]));
+          countUp(v, p[1]);
+        });
+        inner.appendChild(grid);
+      } else {
+        inner.appendChild(el('p', { class: 'has-text-grey', text: 'Posición de grupo no disponible.' }));
+      }
+      var s = teamStatus(currentId);
+      inner.appendChild(el('div', { class: 'dash-status ' + s.cls, text: s.text }));
     }
 
     function renderPartidos() {
@@ -133,11 +133,38 @@
       inner.appendChild(table);
     }
 
-    function findStanding(gs, id) {
-      for (var i = 0; i < gs.length; i++) {
-        var row = (gs[i].teams || []).find(function (t) { return t.team_id === id; });
-        if (row) return row;
+    // ¿Quién eliminó al equipo? (o sigue vivo / campeón / fuera en grupos)
+    function teamStatus(id) {
+      var ko = games.filter(function (g) { return g.type && g.type !== 'group' && (g.home_team_id === id || g.away_team_id === id); });
+      if (!ko.length) {
+        var started = games.some(function (g) { return g.type && g.type !== 'group' && U.isFinished(g); });
+        return started ? { cls: 'st-elim', text: '❌ No superó la fase de grupos' } : { cls: 'st-groups', text: '⏳ En fase de grupos' };
       }
+      function lost(g) {
+        if (!U.isFinished(g)) return false;
+        var home = g.home_team_id === id, mine = Number(home ? g.home_score : g.away_score), opp = Number(home ? g.away_score : g.home_score);
+        if (mine < opp) return true;
+        if (mine === opp) { var mp = Number(home ? g.home_penalty_score : g.away_penalty_score), op = Number(home ? g.away_penalty_score : g.home_penalty_score); return mp < op; }
+        return false;
+      }
+      var losses = ko.filter(lost).sort(function (a, b) { return orderKey(b.local_date) - orderKey(a.local_date); });
+      if (losses.length) {
+        var g = losses[0], home = g.home_team_id === id;
+        var oppId = home ? g.away_team_id : g.home_team_id;
+        var sc = (home ? g.home_score : g.away_score) + '-' + (home ? g.away_score : g.home_score);
+        return { cls: 'st-elim', text: '❌ Eliminado por ' + nameOf(oppId) + ' · ' + (KO_LABEL[g.type] || 'Eliminatoria') + ' (' + sc + ')' };
+      }
+      var fin = ko.find(function (g) { return g.type === 'final' && U.isFinished(g); });
+      if (fin) {
+        var h = fin.home_team_id === id, mine = Number(h ? fin.home_score : fin.away_score), opp = Number(h ? fin.away_score : fin.home_score);
+        var mp = Number(h ? fin.home_penalty_score : fin.away_penalty_score), op = Number(h ? fin.away_penalty_score : fin.home_penalty_score);
+        if (mine > opp || (mine === opp && mp > op)) return { cls: 'st-champ', text: '🏆 ¡Campeón del Mundial!' };
+      }
+      return { cls: 'st-alive', text: '✅ Sigue en competencia' };
+    }
+
+    function findStanding(gs, id) {
+      for (var i = 0; i < gs.length; i++) { var row = (gs[i].teams || []).find(function (t) { return t.team_id === id; }); if (row) return row; }
       return null;
     }
     function countUp(node, target) {
@@ -147,7 +174,6 @@
     }
 
     select.addEventListener('change', function () { selectTeam(select.value); });
-
     var saved = WC.store.getPref(FAV_KEY);
     var initial = (saved && teamsIndex[saved]) ? saved : (teams[0] && teams[0].id);
     if (initial) { select.value = initial; selectTeam(initial); }
