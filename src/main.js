@@ -1,7 +1,9 @@
 /* Punto de entrada de Vite. Importa los estilos y los módulos en orden de
  * dependencia. Cada archivo se cuelga del namespace global WC (efecto de
  * importarlo), igual que antes, pero ahora empaquetado por Vite. */
-import './styles.css';
+import './styles/variables.css';
+import './styles/base.css';
+import './styles/animations.css';
 
 import './store.js';
 import './util.js';

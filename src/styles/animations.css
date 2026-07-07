@@ -1,0 +1,80 @@
+/* animations.css — @keyframes y reglas de animación/efecto */
+
+/* ---------- Skeletons ---------- */
+.skel { border-radius: 8px; background: linear-gradient(90deg,
+  rgba(255,255,255,.05) 25%, rgba(255,255,255,.12) 37%, rgba(255,255,255,.05) 63%);
+  background-size: 400% 100%; animation: shimmer 1.3s infinite; }
+
+.table.is-striped tbody tr:nth-child(even) { background: var(--surface-2); }
+
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* Tarjeta del favorito */
+.dash-card {
+  background: var(--dash-bg, var(--surface));
+  border: .5px solid var(--border); border-radius: 16px; overflow: hidden;
+  animation: dashIn .4s ease; transition: transform .2s ease, background-color .35s ease;
+}
+
+.dash-card:hover { transform: translateY(-2px); }
+
+.dash-stripe { height: 5px; background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3)); }
+
+/* Franja tricolor en movimiento */
+.dash-stripe {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent-2), var(--accent));
+  background-size: 250% 100%;
+  animation: stripeFlow 6s linear infinite;
+}
+
+.confetti-box { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; border-radius: 16px; }
+
+.confetti-piece { position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; opacity: 0; animation: confettiFall 1.35s ease-in forwards; }
+
+/* Franja tricolor animada (siempre) */
+.dash-stripe {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent-2), var(--accent));
+  background-size: 200% 100%;
+  animation: stripeFlow 4s linear infinite;
+}
+
+.confetti-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 4; border-radius: 16px; }
+
+.confetti-piece { position: absolute; top: -14px; width: 8px; height: 13px; border-radius: 2px; animation: confettiFall ease-in 1 forwards; }
+
+/* ========================================================================
+   Animaciones del header: aurora suave + pelota que rueda
+   ======================================================================== */
+.topbar { position: sticky; top: 0; z-index: 30; overflow: hidden; }
+
+/* Aurora: manchas de color difuminadas que se mueven lento por detrás */
+.topbar::before {
+  content: ""; position: absolute; inset: -40% -10%; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(38% 60% at 20% 30%, var(--accent), transparent 60%),
+    radial-gradient(34% 55% at 80% 20%, var(--accent-2), transparent 60%),
+    radial-gradient(40% 60% at 55% 80%, var(--accent-3), transparent 62%);
+  opacity: .16; filter: blur(24px);
+  animation: auroraMove 16s ease-in-out infinite alternate;
+}
+
+@keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: -100% 0; } }
+
+@keyframes dashIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@keyframes stripeFlow { from { background-position: 0 0; } to { background-position: 250% 0; } }
+
+@keyframes confettiFall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(340px) rotate(400deg); } }
+
+@keyframes stripeFlow { to { background-position: -200% 0; } }
+
+@keyframes confettiFall {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--x, 0), 340px) rotate(var(--rot, 360deg)); opacity: 0; }
+}
+
+@keyframes auroraMove {
+  0%   { transform: translate3d(-4%, -3%, 0) scale(1); }
+  50%  { transform: translate3d(4%, 3%, 0) scale(1.08); }
+  100% { transform: translate3d(-2%, 4%, 0) scale(1.04); }
+}
