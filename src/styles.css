@@ -337,3 +337,41 @@ body, .box, .title, .subtitle, .tag, .tl-card2, .bracket-match, .table td, .tabl
 .dash-wrap .subtabs.tabs.is-toggle li.is-active a { background: var(--dash-accent, var(--accent)); border-color: var(--dash-accent, var(--accent)); color: #fff; }
 
 @keyframes dashIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+/* Dashboard: centrar sub-tabs y estilo del estado */
+.dash-wrap .subtabs > ul { justify-content: center; }
+.dash-status { margin-top: 14px; text-align: center; font-size: 13px; font-weight: 600; padding: 10px 12px; border-radius: 8px; background: var(--dash-inner, var(--surface)); color: var(--muted); }
+.dash-status.st-elim { color: #E5484D; }
+.dash-status.st-alive { color: #16A34A; }
+.dash-status.st-champ { color: var(--dash-accent, var(--accent)); font-size: 15px; }
+
+/* Franja tricolor en movimiento */
+.dash-stripe {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent-2), var(--accent));
+  background-size: 250% 100%;
+  animation: stripeFlow 6s linear infinite;
+}
+@keyframes stripeFlow { from { background-position: 0 0; } to { background-position: 250% 0; } }
+
+/* Confeti (solo cuando el favorito es campeón) */
+.dash-card { position: relative; }
+.confetti-box { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 5; border-radius: 16px; }
+.confetti-piece { position: absolute; top: -12px; width: 8px; height: 13px; border-radius: 2px; opacity: 0; animation: confettiFall 1.35s ease-in forwards; }
+@keyframes confettiFall { 0% { opacity: 1; transform: translateY(0) rotate(0deg); } 100% { opacity: 0; transform: translateY(340px) rotate(400deg); } }
+
+/* Franja tricolor animada (siempre) */
+.dash-stripe {
+  background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent-2), var(--accent));
+  background-size: 200% 100%;
+  animation: stripeFlow 4s linear infinite;
+}
+@keyframes stripeFlow { to { background-position: -200% 0; } }
+
+/* Confeti (solo al elegir al campeón) */
+.dash-card { position: relative; }
+.confetti-layer { position: absolute; inset: 0; overflow: hidden; pointer-events: none; z-index: 4; border-radius: 16px; }
+.confetti-piece { position: absolute; top: -14px; width: 8px; height: 13px; border-radius: 2px; animation: confettiFall ease-in 1 forwards; }
+@keyframes confettiFall {
+  0%   { transform: translate(0, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate(var(--x, 0), 340px) rotate(var(--rot, 360deg)); opacity: 0; }
+}

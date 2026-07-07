@@ -69,6 +69,7 @@
       var team = teamsIndex[id];
       if (team && team.flag) C.extractFlag(team.flag, function (hex) { if (currentId === id) applyTeamColor(hex || C.fallbackHex(id)); });
       renderPanel();
+      if (teamStatus(id).cls === 'st-champ') confetti(card, [C.fallbackHex(id), '#FBCB3A', '#ffffff', '#FF6B35', '#0FB5A6']);
     }
 
     function renderPanel() {
@@ -138,7 +139,7 @@
       var ko = games.filter(function (g) { return g.type && g.type !== 'group' && (g.home_team_id === id || g.away_team_id === id); });
       if (!ko.length) {
         var started = games.some(function (g) { return g.type && g.type !== 'group' && U.isFinished(g); });
-        return started ? { cls: 'st-elim', text: '❌ No superó la fase de grupos' } : { cls: 'st-groups', text: '⏳ En fase de grupos' };
+        return started ? { cls: 'st-elim', text: 'No superó la fase de grupos' } : { cls: 'st-groups', text: 'En fase de grupos' };
       }
       function lost(g) {
         if (!U.isFinished(g)) return false;
@@ -152,15 +153,15 @@
         var g = losses[0], home = g.home_team_id === id;
         var oppId = home ? g.away_team_id : g.home_team_id;
         var sc = (home ? g.home_score : g.away_score) + '-' + (home ? g.away_score : g.home_score);
-        return { cls: 'st-elim', text: '❌ Eliminado por ' + nameOf(oppId) + ' · ' + (KO_LABEL[g.type] || 'Eliminatoria') + ' (' + sc + ')' };
+        return { cls: 'st-elim', text: 'Eliminado por ' + nameOf(oppId) + ' · ' + (KO_LABEL[g.type] || 'Eliminatoria') + ' (' + sc + ')' };
       }
       var fin = ko.find(function (g) { return g.type === 'final' && U.isFinished(g); });
       if (fin) {
         var h = fin.home_team_id === id, mine = Number(h ? fin.home_score : fin.away_score), opp = Number(h ? fin.away_score : fin.home_score);
         var mp = Number(h ? fin.home_penalty_score : fin.away_penalty_score), op = Number(h ? fin.away_penalty_score : fin.home_penalty_score);
-        if (mine > opp || (mine === opp && mp > op)) return { cls: 'st-champ', text: '🏆 ¡Campeón del Mundial!' };
+        if (mine > opp || (mine === opp && mp > op)) return { cls: 'st-champ', text: '¡Campeón del Mundial!' };
       }
-      return { cls: 'st-alive', text: '✅ Sigue en competencia' };
+      return { cls: 'st-alive', text: 'Sigue en competencia' };
     }
 
     function findStanding(gs, id) {
@@ -177,6 +178,37 @@
     var saved = WC.store.getPref(FAV_KEY);
     var initial = (saved && teamsIndex[saved]) ? saved : (teams[0] && teams[0].id);
     if (initial) { select.value = initial; selectTeam(initial); }
+  }
+
+  function confetti(container) {
+    var colors = ['#FF8354', '#23CFC0', '#FBCB3A', '#ffffff'];
+    var box = document.createElement('div'); box.className = 'confetti-box';
+    for (var i = 0; i < 40; i++) {
+      var p = document.createElement('i'); p.className = 'confetti-piece';
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.background = colors[i % colors.length];
+      p.style.animationDelay = (Math.random() * 0.35) + 's';
+      box.appendChild(p);
+    }
+    container.appendChild(box);
+    setTimeout(function () { box.remove(); }, 1900);
+  }
+
+  function confetti(host, colors) {
+    colors = (colors && colors.length) ? colors : ['#FF6B35','#0FB5A6','#FBCB3A'];
+    var layer = WC.ui.el('div', { class: 'confetti-layer' });
+    host.appendChild(layer);
+    for (var i = 0; i < 52; i++) {
+      var p = WC.ui.el('div', { class: 'confetti-piece' });
+      p.style.left = (Math.random() * 100) + '%';
+      p.style.background = colors[i % colors.length];
+      p.style.animationDelay = (Math.random() * 0.35) + 's';
+      p.style.animationDuration = (1.5 + Math.random() * 1.3) + 's';
+      p.style.setProperty('--x', ((Math.random() * 2 - 1) * 90) + 'px');
+      p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+      layer.appendChild(p);
+    }
+    setTimeout(function () { layer.remove(); }, 3200);
   }
 
   WC.views = WC.views || {};
