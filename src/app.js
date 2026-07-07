@@ -47,7 +47,10 @@
       el('div', { class: 'container hero-inner' }, [
         themeBtn,
         el('div', { class: 'has-text-centered' }, [
-          el('h1', { class: 'title is-3 brand-title', text: 'MUNDIAL 2026 · Panel Interactivo' }),
+          el('h1', { class: 'title is-3 brand-title' }, [
+            el('span', { class: 'brand-ball', text: '⚽' }),
+            el('span', { text: ' MUNDIAL 2026 · Panel Interactivo' })
+          ]),
           el('p', { class: 'subtitle is-6 has-text-grey', text: 'ISW-521 · Categoría B · Interfaces Interactivas y DOM Avanzado' })
         ])
       ])
