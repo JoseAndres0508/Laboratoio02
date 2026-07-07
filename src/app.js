@@ -33,7 +33,11 @@
     themeBtn.setAttribute('title', dark ? 'Cambiar a claro' : 'Cambiar a oscuro');
   }
   function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); WC.store.setPref('theme', t); refreshThemeBtn(); }
-  function toggleTheme() { applyTheme(currentTheme() === 'dark' ? 'light' : 'dark'); }
+  function toggleTheme() {
+    applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
+    if (WC.applyFavTextColor) WC.applyFavTextColor(WC.store.getPref('favColor'));
+    if (current && current.id === 'dashboard') activate(current);
+  }
 
   function buildShell() {
     themeBtn = el('button', { class: 'button is-dark is-small theme-toggle', 'aria-label': 'Cambiar tema' });
@@ -76,6 +80,7 @@
     if (saved) document.documentElement.setAttribute('data-theme', saved);
 
     buildShell();
+    if (WC.applyFavTextColor) WC.applyFavTextColor(WC.store.getPref('favColor'));
     WC.ui.wireBannerToApi();
     WC.ui.setAuthSuccessHandler(reloadCurrent);
     window.addEventListener(WC.api.EVENTS.SESSION_EXPIRED, function () { WC.ui.showAuthOverlay({ expired: true }); });

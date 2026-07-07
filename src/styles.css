@@ -292,3 +292,48 @@ html[data-theme="light"] {
 /* Header centrado + botón de tema en la esquina */
 .hero-inner { position: relative; }
 .hero-inner .theme-toggle { position: absolute; top: 0; right: 0; }
+
+/* ========================================================================
+   DASHBOARD rediseñado + reactivo al color de la bandera + animaciones
+   ======================================================================== */
+/* Transiciones suaves de color (al cambiar equipo o tema) */
+body, .box, .title, .subtitle, .tag, .tl-card2, .bracket-match, .table td, .table th,
+.dash-card, .dash-stat, .dash-row, .stadium-section, .cal-cell {
+  transition: color .35s ease, background-color .35s ease, border-color .35s ease;
+}
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; animation: none !important; } }
+
+/* Relieve del header para darle dimensión (sin cambiar su color) */
+.topbar { box-shadow: 0 6px 20px rgba(0,0,0,.18); }
+
+/* Layout centrado */
+.dash-wrap { max-width: 470px; margin: 0 auto; }
+.dash-wrap .label { text-align: center; }
+
+/* Tarjeta del favorito */
+.dash-card {
+  background: var(--dash-bg, var(--surface));
+  border: .5px solid var(--border); border-radius: 16px; overflow: hidden;
+  animation: dashIn .4s ease; transition: transform .2s ease, background-color .35s ease;
+}
+.dash-card:hover { transform: translateY(-2px); }
+.dash-stripe { height: 5px; background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3)); }
+.dash-inner { padding: 18px; }
+.dash-head { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.dash-flag2 { width: 46px; height: 32px; object-fit: cover; border-radius: 6px; border: .5px solid var(--border); }
+.dash-name { font-family: var(--font-display); font-weight: 700; font-size: 22px; letter-spacing: .3px; }
+.dash-tag { margin-left: auto; font-size: 12px; padding: 4px 12px; border-radius: 999px; background: var(--dash-accent, var(--accent)); color: #fff; }
+
+.dash-stats2 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.dash-stat { background: var(--dash-inner, var(--surface)); border-radius: 10px; padding: 14px 4px; text-align: center; }
+.dash-stat .v { font-family: var(--font-display); font-weight: 700; font-size: 26px; color: var(--dash-accent, var(--accent)); }
+.dash-stat .l { font-size: 11px; color: var(--muted); }
+.dash-row { background: var(--dash-inner, var(--surface)); border-radius: 8px; padding: 10px 12px; margin-top: 8px; display: flex; justify-content: space-between; font-size: 13px; }
+.dash-card .table { background: transparent; }
+.dash-card .table tr.dash-me { background: var(--dash-accent, var(--accent)); }
+.dash-card .table tr.dash-me td, .dash-card .table tr.dash-me strong { color: #fff; }
+
+/* Sub-tabs del dashboard con el color del equipo */
+.dash-wrap .subtabs.tabs.is-toggle li.is-active a { background: var(--dash-accent, var(--accent)); border-color: var(--dash-accent, var(--accent)); color: #fff; }
+
+@keyframes dashIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }

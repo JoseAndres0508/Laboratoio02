@@ -5,6 +5,7 @@ import './styles.css';
 
 import './store.js';
 import './util.js';
+import './colors.js';
 import './api.js';
 import './auth.js';
 import './ui.js';
