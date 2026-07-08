@@ -180,20 +180,6 @@
     if (initial) { select.value = initial; selectTeam(initial); }
   }
 
-  function confetti(container) {
-    var colors = ['#FF8354', '#23CFC0', '#FBCB3A', '#ffffff'];
-    var box = document.createElement('div'); box.className = 'confetti-box';
-    for (var i = 0; i < 40; i++) {
-      var p = document.createElement('i'); p.className = 'confetti-piece';
-      p.style.left = (Math.random() * 100) + '%';
-      p.style.background = colors[i % colors.length];
-      p.style.animationDelay = (Math.random() * 0.35) + 's';
-      box.appendChild(p);
-    }
-    container.appendChild(box);
-    setTimeout(function () { box.remove(); }, 1900);
-  }
-
   function confetti(host, colors) {
     colors = (colors && colors.length) ? colors : ['#FF6B35','#0FB5A6','#FBCB3A'];
     var layer = WC.ui.el('div', { class: 'confetti-layer' });
