@@ -103,6 +103,16 @@
       b.textContent = '⏳ ' + labelFor(d.status) + ' · próximo reintento (' + d.attempt + '/' + d.maxAttempts + ') en ' + d.secondsLeft + ' s';
     });
     window.addEventListener(E.SUCCESS, function () { if (banner) banner.className = 'status-banner hidden'; });
+    // Se agotaron los reintentos: cambiamos el banner a estado de error (para
+    // que NO se quede congelado el countdown) y lo ocultamos tras unos segundos.
+    // El detalle persistente del error lo muestra la vista con su botón "Reintentar".
+    window.addEventListener(E.GIVEUP, function (ev) {
+      var d = ev.detail; var b = ensureBanner();
+      b.className = 'status-banner is-error';
+      b.textContent = '⚠️ ' + labelFor(d.status) + ' · no se pudo completar tras varios reintentos';
+      clearTimeout(b._hideTimer);
+      b._hideTimer = setTimeout(function () { if (banner) banner.className = 'status-banner hidden'; }, 5000);
+    });
   }
 
   // ---- Overlay de autenticación (login + registro / sesión expirada) ----

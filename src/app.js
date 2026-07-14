@@ -13,7 +13,7 @@
     { id: 'matriz', label: 'Matriz por Grupo', icon: 'table-cells' }
   ];
 
-  var viewRoot, tabList, themeBtn, current = null;
+  var viewRoot, tabList, themeBtn, logoutBtn, current = null;
 
   function activate(tab) {
     current = tab;
@@ -22,6 +22,36 @@
     WC.views[tab.id].mount(viewRoot);
   }
   function reloadCurrent() { activate(current || TABS[0]); }
+
+  // ---- Cerrar sesión ----
+  // Limpia el token (sin recargar la página) y vuelve a mostrar el login.
+  function doLogout() {
+    WC.auth.logout();
+    if (viewRoot) viewRoot.innerHTML = '';
+    refreshAuthUI();
+    WC.ui.showAuthOverlay({ expired: false });
+  }
+  // Muestra u oculta el botón de logout según haya sesión activa.
+  function refreshAuthUI() {
+    if (logoutBtn) logoutBtn.style.display = WC.auth.isLoggedIn() ? '' : 'none';
+  }
+
+  // ---- Accesibilidad: escalado del tamaño de letra ----
+  // Guardamos el porcentaje en localStorage y lo aplicamos al <html>; como
+  // Bulma usa rem, todo el layout escala de forma proporcional.
+  var FONT_MIN = 80, FONT_MAX = 150, FONT_STEP = 10, FONT_DEFAULT = 100;
+  function currentFontScale() {
+    var v = parseInt(WC.store.getPref('fontScale'), 10);
+    return isNaN(v) ? FONT_DEFAULT : Math.min(FONT_MAX, Math.max(FONT_MIN, v));
+  }
+  function applyFontScale(pct) {
+    pct = Math.min(FONT_MAX, Math.max(FONT_MIN, pct));
+    document.documentElement.style.fontSize = pct + '%';
+    WC.store.setPref('fontScale', pct);
+    return pct;
+  }
+  function changeFont(delta) { applyFontScale(currentFontScale() + delta); }
+  function resetFont() { applyFontScale(FONT_DEFAULT); }
 
   // ---- Tema claro/oscuro ----
   function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
@@ -40,12 +70,33 @@
   }
 
   function buildShell() {
-    themeBtn = el('button', { class: 'button is-dark is-small theme-toggle', 'aria-label': 'Cambiar tema' });
+    themeBtn = el('button', { class: 'button is-dark is-small', 'aria-label': 'Cambiar tema' });
     themeBtn.addEventListener('click', toggleTheme);
+
+    // Controles de accesibilidad: reducir / restablecer / aumentar tamaño de letra.
+    var fontSmaller = el('button', { class: 'button is-dark is-small font-btn', 'aria-label': 'Reducir tamaño de letra', title: 'Reducir tamaño de letra' }, [el('span', { text: 'A' })]);
+    var fontReset = el('button', { class: 'button is-dark is-small font-btn font-btn-reset', 'aria-label': 'Restablecer tamaño de letra', title: 'Restablecer tamaño de letra' }, [el('span', { text: 'A' })]);
+    var fontBigger = el('button', { class: 'button is-dark is-small font-btn font-btn-lg', 'aria-label': 'Aumentar tamaño de letra', title: 'Aumentar tamaño de letra' }, [el('span', { text: 'A' })]);
+    fontSmaller.addEventListener('click', function () { changeFont(-FONT_STEP); });
+    fontReset.addEventListener('click', resetFont);
+    fontBigger.addEventListener('click', function () { changeFont(FONT_STEP); });
+
+    // Botón de cerrar sesión (se oculta cuando no hay sesión activa).
+    logoutBtn = el('button', { class: 'button is-dark is-small', 'aria-label': 'Cerrar sesión', title: 'Cerrar sesión' }, [
+      el('span', { class: 'icon' }, [el('i', { class: 'fas fa-arrow-right-from-bracket' })]),
+      el('span', { text: 'Salir' })
+    ]);
+    logoutBtn.addEventListener('click', doLogout);
+
+    var controls = el('div', { class: 'hero-controls' }, [
+      el('div', { class: 'font-controls', role: 'group', 'aria-label': 'Tamaño de letra' }, [fontSmaller, fontReset, fontBigger]),
+      themeBtn,
+      logoutBtn
+    ]);
 
     var hero = el('section', { class: 'app-hero' }, [
       el('div', { class: 'container hero-inner' }, [
-        themeBtn,
+        controls,
         el('div', { class: 'has-text-centered' }, [
           el('h1', { class: 'title is-3 brand-title', text: 'MUNDIAL 2026 · Panel Interactivo' }),
           el('p', { class: 'subtitle is-6 has-text-grey', text: 'ISW-521 · Categoría B · Interfaces Interactivas y DOM Avanzado' })
@@ -79,17 +130,19 @@
     document.body.appendChild(content);
     document.body.appendChild(footer);
     refreshThemeBtn();
+    refreshAuthUI();
   }
 
   function start() {
     var saved = WC.store.getPref('theme');
     if (saved) document.documentElement.setAttribute('data-theme', saved);
+    applyFontScale(currentFontScale());
 
     buildShell();
     if (WC.applyFavTextColor) WC.applyFavTextColor(WC.store.getPref('favColor'));
     WC.ui.wireBannerToApi();
-    WC.ui.setAuthSuccessHandler(reloadCurrent);
-    window.addEventListener(WC.api.EVENTS.SESSION_EXPIRED, function () { WC.ui.showAuthOverlay({ expired: true }); });
+    WC.ui.setAuthSuccessHandler(function () { refreshAuthUI(); reloadCurrent(); });
+    window.addEventListener(WC.api.EVENTS.SESSION_EXPIRED, function () { refreshAuthUI(); WC.ui.showAuthOverlay({ expired: true }); });
 
     if (WC.auth.isLoggedIn()) activate(TABS[0]);
     else WC.ui.showAuthOverlay({ expired: false });

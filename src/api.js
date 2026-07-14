@@ -31,6 +31,7 @@
     RETRY: 'wc:request-retry',          // se programó un reintento
     COUNTDOWN: 'wc:request-countdown',  // tic de la cuenta atrás (cada 1s)
     SUCCESS: 'wc:request-success',      // petición resuelta con éxito
+    GIVEUP: 'wc:request-giveup',        // se agotaron los reintentos (falló)
     SESSION_EXPIRED: 'wc:session-expired' // 401: token inválido
   };
 
@@ -91,6 +92,7 @@
             { endpoint: endpoint, status: 0, attempt: retries, maxAttempts: MAX_RETRIES }, d);
           continue;
         }
+        emit(EVENTS.GIVEUP, { endpoint: endpoint, status: 0 });
         throw new WC.HttpError(0, 'sin-conexion');
       }
 
@@ -111,6 +113,7 @@
             delay);
           continue; // reintenta el while
         }
+        emit(EVENTS.GIVEUP, { endpoint: endpoint, status: response.status });
         throw new WC.HttpError(response.status, 'reintentos-agotados');
       }
 

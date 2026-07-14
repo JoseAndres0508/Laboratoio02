@@ -43,9 +43,17 @@
     return data.user;
   }
 
+  // Cerrar sesión: solo limpia el token guardado. NO recarga la página
+  // (window.location.reload está prohibido); el llamador se encarga de volver
+  // a mostrar el overlay de login.
+  function logout() {
+    WC.store.clearToken();
+  }
+
   WC.auth = {
     authenticate: authenticate,
     register: register,
+    logout: logout,
     isLoggedIn: function () { return !!WC.store.getToken(); }
   };
 })(window.WC = window.WC || {});
