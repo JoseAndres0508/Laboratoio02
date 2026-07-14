@@ -15,11 +15,21 @@
 
   var viewRoot, tabList, themeBtn, logoutBtn, current = null;
 
-  function activate(tab) {
+  async function activate(tab) {
     current = tab;
     [].forEach.call(tabList.children, function (li) { li.classList.toggle('is-active', li._id === tab.id); });
     viewRoot.innerHTML = '';
-    WC.views[tab.id].mount(viewRoot);
+    // try/await (NO .catch): si la vista rechaza por un 401, el modal de sesión
+    // expirada ya se mostró vía evento; evitamos un "unhandled rejection" en la
+    // Console. Para otros errores mostramos un aviso con reintento en la vista.
+    try {
+      await WC.views[tab.id].mount(viewRoot);
+    } catch (err) {
+      if (!err || err.status !== 401) {
+        viewRoot.innerHTML = '';
+        viewRoot.appendChild(WC.ui.errorNotice('Ocurrió un error al cargar esta sección.', function () { activate(tab); }));
+      }
+    }
   }
   function reloadCurrent() { activate(current || TABS[0]); }
 
