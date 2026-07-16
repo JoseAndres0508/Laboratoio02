@@ -11,6 +11,26 @@
   var KO_LABEL = { r32: 'Dieciseisavos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semifinales', third: '3.º puesto', final: 'Final' };
   function orderKey(s) { var d = new Date(s); return isNaN(d) ? 0 : d.getTime(); }
 
+  // ¿El equipo perdió este partido de eliminatoria? (incluye penales)
+  function lostKo(g, id) {
+    if (!U.isFinished(g)) return false;
+    var home = g.home_team_id === id, mine = Number(home ? g.home_score : g.away_score), opp = Number(home ? g.away_score : g.home_score);
+    if (mine < opp) return true;
+    if (mine === opp) { var mp = Number(home ? g.home_penalty_score : g.away_penalty_score), op = Number(home ? g.away_penalty_score : g.home_penalty_score); return mp < op; }
+    return false;
+  }
+  function eliminationText(g, id, nameOf) {
+    var home = g.home_team_id === id;
+    var oppId = home ? g.away_team_id : g.home_team_id;
+    var sc = (home ? g.home_score : g.away_score) + '-' + (home ? g.away_score : g.home_score);
+    return { cls: 'st-elim', text: 'Eliminado por ' + nameOf(oppId) + ' · ' + (KO_LABEL[g.type] || 'Eliminatoria') + ' (' + sc + ')' };
+  }
+  function wonFinal(fin, id) {
+    var h = fin.home_team_id === id, mine = Number(h ? fin.home_score : fin.away_score), opp = Number(h ? fin.away_score : fin.home_score);
+    var mp = Number(h ? fin.home_penalty_score : fin.away_penalty_score), op = Number(h ? fin.away_penalty_score : fin.home_penalty_score);
+    return mine > opp || (mine === opp && mp > op);
+  }
+
   async function mount(root) {
     var wrap = el('div', { class: 'dash-wrap' });
     root.appendChild(wrap);
@@ -141,26 +161,11 @@
         var started = games.some(function (g) { return g.type && g.type !== 'group' && U.isFinished(g); });
         return started ? { cls: 'st-elim', text: 'No superó la fase de grupos' } : { cls: 'st-groups', text: 'En fase de grupos' };
       }
-      function lost(g) {
-        if (!U.isFinished(g)) return false;
-        var home = g.home_team_id === id, mine = Number(home ? g.home_score : g.away_score), opp = Number(home ? g.away_score : g.home_score);
-        if (mine < opp) return true;
-        if (mine === opp) { var mp = Number(home ? g.home_penalty_score : g.away_penalty_score), op = Number(home ? g.away_penalty_score : g.home_penalty_score); return mp < op; }
-        return false;
-      }
-      var losses = ko.filter(lost).sort(function (a, b) { return orderKey(b.local_date) - orderKey(a.local_date); });
-      if (losses.length) {
-        var g = losses[0], home = g.home_team_id === id;
-        var oppId = home ? g.away_team_id : g.home_team_id;
-        var sc = (home ? g.home_score : g.away_score) + '-' + (home ? g.away_score : g.home_score);
-        return { cls: 'st-elim', text: 'Eliminado por ' + nameOf(oppId) + ' · ' + (KO_LABEL[g.type] || 'Eliminatoria') + ' (' + sc + ')' };
-      }
+      var losses = ko.filter(function (g) { return lostKo(g, id); })
+        .sort(function (a, b) { return orderKey(b.local_date) - orderKey(a.local_date); });
+      if (losses.length) return eliminationText(losses[0], id, nameOf);
       var fin = ko.find(function (g) { return g.type === 'final' && U.isFinished(g); });
-      if (fin) {
-        var h = fin.home_team_id === id, mine = Number(h ? fin.home_score : fin.away_score), opp = Number(h ? fin.away_score : fin.home_score);
-        var mp = Number(h ? fin.home_penalty_score : fin.away_penalty_score), op = Number(h ? fin.away_penalty_score : fin.home_penalty_score);
-        if (mine > opp || (mine === opp && mp > op)) return { cls: 'st-champ', text: '¡Campeón del Mundial!' };
-      }
+      if (fin && wonFinal(fin, id)) return { cls: 'st-champ', text: '¡Campeón del Mundial!' };
       return { cls: 'st-alive', text: 'Sigue en competencia' };
     }
 

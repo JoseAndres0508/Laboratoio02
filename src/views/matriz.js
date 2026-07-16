@@ -10,6 +10,26 @@
   var KO_ORDER = [['r32', 'Dieciseisavos'], ['r16', 'Octavos'], ['qf', 'Cuartos'], ['sf', 'Semifinales'], ['final', 'Final'], ['third', '3.º puesto']];
   function orderKey(s) { var d = new Date(s); return isNaN(d) ? 0 : d.getTime(); }
 
+  // ---------- Construcción de la matriz 4x4 ----------
+  function matrixHead(ids, label) {
+    var head = el('tr', {}, [el('th', { text: '' })]);
+    ids.forEach(function (id) { head.appendChild(el('th', { text: label(id) })); });
+    return el('thead', {}, [head]);
+  }
+  function matrixRow(rowId, ids, label) {
+    var tr = el('tr', {}, [el('th', { text: label(rowId) })]);
+    ids.forEach(function (colId) {
+      if (rowId === colId) tr.appendChild(el('td', { class: 'cell diag', text: '—' }));
+      else tr.appendChild(el('td', { class: 'cell pending', dataset: { cell: rowId + '_' + colId }, text: 'Pendiente' }));
+    });
+    return tr;
+  }
+  function patchCell(container, rowId, colId, text) {
+    var cell = container.querySelector('[data-cell="' + rowId + '_' + colId + '"]');
+    if (cell) { cell.textContent = text; cell.classList.add('played'); cell.classList.remove('pending'); }
+  }
+
+  // ---------- Vista ----------
   async function mount(root) {
     var chipsRow = el('div', { class: 'chips' });
     var container = el('div', { class: 'columns is-multiline' });
@@ -68,18 +88,9 @@
     function buildMatrix(grp, name) {
       var ids = (grp.teams || []).map(function (t) { return t.team_id; });
       var table = el('table', { class: 'table is-bordered is-narrow matriz-table' });
-      var head = el('tr', {}, [el('th', { text: '' })]);
-      ids.forEach(function (id) { head.appendChild(el('th', { text: label(id) })); });
-      table.appendChild(el('thead', {}, [head]));
+      table.appendChild(matrixHead(ids, label));
       var tb = el('tbody', {});
-      ids.forEach(function (rowId) {
-        var tr = el('tr', {}, [el('th', { text: label(rowId) })]);
-        ids.forEach(function (colId) {
-          if (rowId === colId) tr.appendChild(el('td', { class: 'cell diag', text: '—' }));
-          else tr.appendChild(el('td', { class: 'cell pending', dataset: { cell: rowId + '_' + colId }, text: 'Pendiente' }));
-        });
-        tb.appendChild(tr);
-      });
+      ids.forEach(function (rowId) { tb.appendChild(matrixRow(rowId, ids, label)); });
       table.appendChild(tb);
       return el('div', { class: 'column is-half' }, [el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: 'Grupo ' + name }), table])]);
     }
@@ -97,16 +108,10 @@
       return el('div', { class: 'column is-full' }, [el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: name }), list])]);
     }
 
+    // Parchea SOLO las celdas ya jugadas (no reconstruye la matriz).
     function patchGroups() {
       note.innerHTML = '';
-      if (!gamesRes.ok) {
-        var box = el('div', { class: 'notification is-warning is-light' });
-        box.appendChild(el('span', { text: 'Resultados no disponibles: las celdas quedan en “Pendiente”. ' }));
-        var b = el('button', { class: 'button is-small is-warning ml-2', text: 'Reintentar' });
-        b.addEventListener('click', function () { root.innerHTML = ''; mount(root); });
-        box.appendChild(b); note.appendChild(box);
-        return;
-      }
+      if (!gamesRes.ok) { note.appendChild(patchWarning()); return; }
       games.forEach(function (g) {
         if (g.type && g.type !== 'group') return;      // solo partidos de grupo
         if (!U.isFinished(g)) return;
@@ -114,9 +119,13 @@
         patchCell(container, g.away_team_id, g.home_team_id, g.away_score + ' - ' + g.home_score);
       });
     }
-    function patchCell(container, rowId, colId, text) {
-      var cell = container.querySelector('[data-cell="' + rowId + '_' + colId + '"]');
-      if (cell) { cell.textContent = text; cell.classList.add('played'); cell.classList.remove('pending'); }
+    function patchWarning() {
+      var box = el('div', { class: 'notification is-warning is-light' });
+      box.appendChild(el('span', { text: 'Resultados no disponibles: las celdas quedan en “Pendiente”. ' }));
+      var b = el('button', { class: 'button is-small is-warning ml-2', text: 'Reintentar' });
+      b.addEventListener('click', function () { root.innerHTML = ''; mount(root); });
+      box.appendChild(b);
+      return box;
     }
 
     render();

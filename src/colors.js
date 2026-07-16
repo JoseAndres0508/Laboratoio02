@@ -43,32 +43,47 @@
   function innerFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? '#ffffff' : hslToHex(c[0], clamp(c[1], 18, 40), 11); }
   function fallbackHex(id) { var h = (parseInt(id, 10) * 137.508) % 360; return hslToHex(h, 65, 50); }
 
+  // Dibuja la bandera 24x24 en un canvas y devuelve sus píxeles (RGBA).
+  function readFlagPixels(img) {
+    var c = document.createElement('canvas'); var w = c.width = 24, h = c.height = 24;
+    var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
+    return ctx.getImageData(0, 0, w, h).data;
+  }
+
+  // Agrupa los píxeles en "buckets" de color, saltando transparencias y blancos.
+  function accumulateBuckets(data) {
+    var buckets = {};
+    for (var i = 0; i < data.length; i += 4) {
+      var r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3]; if (a < 128) continue;
+      var mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn;
+      if (mx > 238 && sat < 18) continue; // salta blancos
+      var k = (r >> 5) + '-' + (g >> 5) + '-' + (b >> 5);
+      buckets[k] = buckets[k] || { n: 0, r: 0, g: 0, b: 0 };
+      buckets[k].n++; buckets[k].r += r; buckets[k].g += g; buckets[k].b += b;
+    }
+    return buckets;
+  }
+
+  // Elige el bucket dominante (más frecuente y saturado) y lo pasa a HEX.
+  function dominantColor(buckets) {
+    var best = null;
+    Object.keys(buckets).forEach(function (k) {
+      var o = buckets[k], r = o.r / o.n, g = o.g / o.n, b = o.b / o.n, mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn;
+      var score = o.n * (sat + 25);
+      if (!best || score > best.score) best = { score: score, r: r, g: g, b: b };
+    });
+    if (!best) return null;
+    return '#' + [best.r, best.g, best.b].map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join('');
+  }
+
   // Color dominante de la bandera (o null si la imagen no se puede leer)
   function extractFlag(url, cb) {
     if (!url) { cb(null); return; }
     var img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = function () {
-      try {
-        var c = document.createElement('canvas'); var w = c.width = 24, h = c.height = 24;
-        var ctx = c.getContext('2d'); ctx.drawImage(img, 0, 0, w, h);
-        var data = ctx.getImageData(0, 0, w, h).data, buckets = {};
-        for (var i = 0; i < data.length; i += 4) {
-          var r = data[i], g = data[i + 1], b = data[i + 2], a = data[i + 3]; if (a < 128) continue;
-          var mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn;
-          if (mx > 238 && sat < 18) continue; // salta blancos
-          var k = (r >> 5) + '-' + (g >> 5) + '-' + (b >> 5);
-          buckets[k] = buckets[k] || { n: 0, r: 0, g: 0, b: 0 };
-          buckets[k].n++; buckets[k].r += r; buckets[k].g += g; buckets[k].b += b;
-        }
-        var best = null;
-        Object.keys(buckets).forEach(function (k) {
-          var o = buckets[k], r = o.r / o.n, g = o.g / o.n, b = o.b / o.n, mx = Math.max(r, g, b), mn = Math.min(r, g, b), sat = mx - mn;
-          var score = o.n * (sat + 25);
-          if (!best || score > best.score) best = { score: score, r: r, g: g, b: b };
-        });
-        cb(best ? '#' + [best.r, best.g, best.b].map(function (v) { return ('0' + Math.round(v).toString(16)).slice(-2); }).join('') : null);
-      } catch (e) { cb(null); }
+      try { cb(dominantColor(accumulateBuckets(readFlagPixels(img)))); }
+      catch (e) { cb(null); }
     };
     img.onerror = function () { cb(null); };
     img.src = url;

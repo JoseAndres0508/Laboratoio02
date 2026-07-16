@@ -29,7 +29,7 @@
       }
     }
   }
-  function reloadCurrent() { activate(current || TABS[0]); }
+  function reactivateCurrent() { activate(current || TABS[0]); }
 
 
   function doLogout() {
@@ -74,32 +74,36 @@
     if (current && current.id === 'dashboard') activate(current);
   }
 
-  function buildShell() {
+  // Controles de accesibilidad: reducir / restablecer / aumentar tamaño de letra.
+  function buildFontControls() {
+    var smaller = el('button', { class: 'button is-dark is-small font-btn', 'aria-label': 'Reducir tamaño de letra', title: 'Reducir tamaño de letra' }, [el('span', { text: 'A' })]);
+    var reset = el('button', { class: 'button is-dark is-small font-btn font-btn-reset', 'aria-label': 'Restablecer tamaño de letra', title: 'Restablecer tamaño de letra' }, [el('span', { text: 'A' })]);
+    var bigger = el('button', { class: 'button is-dark is-small font-btn font-btn-lg', 'aria-label': 'Aumentar tamaño de letra', title: 'Aumentar tamaño de letra' }, [el('span', { text: 'A' })]);
+    smaller.addEventListener('click', function () { changeFont(-FONT_STEP); });
+    reset.addEventListener('click', resetFont);
+    bigger.addEventListener('click', function () { changeFont(FONT_STEP); });
+    return el('div', { class: 'font-controls', role: 'group', 'aria-label': 'Tamaño de letra' }, [smaller, reset, bigger]);
+  }
+
+  function buildThemeButton() {
     themeBtn = el('button', { class: 'button is-dark is-small', 'aria-label': 'Cambiar tema' });
     themeBtn.addEventListener('click', toggleTheme);
+    return themeBtn;
+  }
 
-    // Controles de accesibilidad: reducir / restablecer / aumentar tamaño de letra.
-    var fontSmaller = el('button', { class: 'button is-dark is-small font-btn', 'aria-label': 'Reducir tamaño de letra', title: 'Reducir tamaño de letra' }, [el('span', { text: 'A' })]);
-    var fontReset = el('button', { class: 'button is-dark is-small font-btn font-btn-reset', 'aria-label': 'Restablecer tamaño de letra', title: 'Restablecer tamaño de letra' }, [el('span', { text: 'A' })]);
-    var fontBigger = el('button', { class: 'button is-dark is-small font-btn font-btn-lg', 'aria-label': 'Aumentar tamaño de letra', title: 'Aumentar tamaño de letra' }, [el('span', { text: 'A' })]);
-    fontSmaller.addEventListener('click', function () { changeFont(-FONT_STEP); });
-    fontReset.addEventListener('click', resetFont);
-    fontBigger.addEventListener('click', function () { changeFont(FONT_STEP); });
-
-    // Botón de cerrar sesión (se oculta cuando no hay sesión activa).
+  // Botón de cerrar sesión (se oculta cuando no hay sesión activa).
+  function buildLogoutButton() {
     logoutBtn = el('button', { class: 'button is-dark is-small', 'aria-label': 'Cerrar sesión', title: 'Cerrar sesión' }, [
       el('span', { class: 'icon' }, [el('i', { class: 'fas fa-arrow-right-from-bracket' })]),
       el('span', { text: 'Salir' })
     ]);
     logoutBtn.addEventListener('click', doLogout);
+    return logoutBtn;
+  }
 
-    var controls = el('div', { class: 'hero-controls' }, [
-      el('div', { class: 'font-controls', role: 'group', 'aria-label': 'Tamaño de letra' }, [fontSmaller, fontReset, fontBigger]),
-      themeBtn,
-      logoutBtn
-    ]);
-
-    var hero = el('section', { class: 'app-hero' }, [
+  function buildHero() {
+    var controls = el('div', { class: 'hero-controls' }, [buildFontControls(), buildThemeButton(), buildLogoutButton()]);
+    return el('section', { class: 'app-hero' }, [
       el('div', { class: 'container hero-inner' }, [
         controls,
         el('div', { class: 'has-text-centered' }, [
@@ -108,32 +112,39 @@
         ])
       ])
     ]);
+  }
 
+  function buildTabItem(t) {
+    var a = el('a', {}, [
+      el('span', { class: 'icon is-small' }, [el('i', { class: 'fas fa-' + t.icon })]),
+      el('span', { text: t.label })
+    ]);
+    var li = el('li', {}, [a]);
+    li._id = t.id;
+    a.addEventListener('click', function () { activate(t); });
+    return li;
+  }
+
+  function buildTabs() {
     tabList = el('ul');
-    TABS.forEach(function (t) {
-      var a = el('a', {}, [
-        el('span', { class: 'icon is-small' }, [el('i', { class: 'fas fa-' + t.icon })]),
-        el('span', { text: t.label })
-      ]);
-      var li = el('li', {}, [a]);
-      li._id = t.id;
-      a.addEventListener('click', function () { activate(t); });
-      tabList.appendChild(li);
-    });
-    var tabs = el('div', { class: 'container' }, [el('div', { class: 'tabs is-boxed is-centered main-tabs' }, [tabList])]);
+    TABS.forEach(function (t) { tabList.appendChild(buildTabItem(t)); });
+    return el('div', { class: 'container' }, [el('div', { class: 'tabs is-boxed is-centered main-tabs' }, [tabList])]);
+  }
 
-    var topbar = el('div', { class: 'topbar' }, [hero, tabs]);
-    viewRoot = el('div', { id: 'view-root' });
-    var content = el('div', { class: 'container', style: 'padding-top:18px;padding-bottom:60px' }, [viewRoot]);
-
-    var footer = el('footer', { class: 'app-footer' }, [
+  function buildFooter() {
+    return el('footer', { class: 'app-footer' }, [
       el('div', { class: 'app-footer-stripe' }),
       el('div', { class: 'container app-footer-text', text: 'Mundial 2026 · Panel Interactivo — ISW-521 · Datos: worldcup26.ir' })
     ]);
+  }
 
+  function buildShell() {
+    var topbar = el('div', { class: 'topbar' }, [buildHero(), buildTabs()]);
+    viewRoot = el('div', { id: 'view-root' });
+    var content = el('div', { class: 'container', style: 'padding-top:18px;padding-bottom:60px' }, [viewRoot]);
     document.body.appendChild(topbar);
     document.body.appendChild(content);
-    document.body.appendChild(footer);
+    document.body.appendChild(buildFooter());
     refreshThemeBtn();
     refreshAuthUI();
   }
@@ -146,7 +157,7 @@
     buildShell();
     if (WC.applyFavTextColor) WC.applyFavTextColor(WC.store.getPref('favColor'));
     WC.ui.wireBannerToApi();
-    WC.ui.setAuthSuccessHandler(function () { refreshAuthUI(); reloadCurrent(); });
+    WC.ui.setAuthSuccessHandler(function () { refreshAuthUI(); reactivateCurrent(); });
     window.addEventListener(WC.api.EVENTS.SESSION_EXPIRED, function () { refreshAuthUI(); WC.ui.showAuthOverlay({ expired: true }); });
 
     if (WC.auth.isLoggedIn()) activate(TABS[0]);

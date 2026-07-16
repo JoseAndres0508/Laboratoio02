@@ -4,9 +4,9 @@
  * Una sola función `request()` resuelve TODA la arquitectura obligatoria:
  *
  *   1. JWT          -> añade "Authorization: Bearer <token>" a cada llamada.
- *   2. async/await  -> NO se usa .then() ni .catch() en ningún punto.
+ *   2. async/await  -> exclusivo; sin encadenar promesas con callbacks.
  *   3. 401          -> limpia el token y avisa (evento) para mostrar el modal
- *                      de "sesión expirada". NUNCA llama a location.reload().
+ *                      de "sesión expirada". Nunca recarga la página.
  *   4. 429 / 500    -> reintenta con backoff exponencial (1s, 2s, 4s, 8s) y
  *                      emite un countdown visible segundo a segundo.
  *   5. offline      -> cada respuesta exitosa se cachea en localStorage.
@@ -17,19 +17,18 @@
 (function (WC) {
   'use strict';
 
-  var API_BASE = ''; 
-  
+  var API_BASE = '';
+
   var RETRYABLE = { 429: true, 500: true, 502: true, 503: true, 504: true };
 
   var BASE_DELAYS = [1000, 2000, 4000, 8000];
   var MAX_RETRIES = BASE_DELAYS.length;
 
-
   var EVENTS = {
-    RETRY: 'wc:request-retry', 
-    COUNTDOWN: 'wc:request-countdown', 
-    SUCCESS: 'wc:request-success',  
-    GIVEUP: 'wc:request-giveup',        
+    RETRY: 'wc:request-retry',
+    COUNTDOWN: 'wc:request-countdown',
+    SUCCESS: 'wc:request-success',
+    GIVEUP: 'wc:request-giveup',
     SESSION_EXPIRED: 'wc:session-expired'
   };
 
@@ -53,6 +52,7 @@
     return { Authorization: 'Bearer ' + (WC.store.getToken() || '') };
   }
 
+  // Espera con cuenta atrás visible (clave para el 429).
   async function waitWithCountdown(detailBase, delayMs) {
     var seconds = Math.round(delayMs / 1000);
     emit(EVENTS.RETRY, Object.assign({ waitSeconds: seconds }, detailBase));
@@ -62,60 +62,65 @@
     }
   }
 
+  // Programa un reintento con backoff. Devuelve true si reintenta, false si se
+  // agotaron los intentos (en ese caso ya emitió GIVEUP).
+  async function scheduleRetry(endpoint, status, state) {
+    if (state.retries < MAX_RETRIES) {
+      var delay = BASE_DELAYS[state.retries];
+      state.retries++;
+      await waitWithCountdown(
+        { endpoint: endpoint, status: status, attempt: state.retries, maxAttempts: MAX_RETRIES }, delay);
+      return true;
+    }
+    emit(EVENTS.GIVEUP, { endpoint: endpoint, status: status });
+    return false;
+  }
+
+  // 401: limpia token, avisa y corta (sin recargar la página).
+  function handleUnauthorized(endpoint) {
+    WC.store.clearToken();
+    emit(EVENTS.SESSION_EXPIRED, { endpoint: endpoint });
+    throw new WC.HttpError(401, 'sesion-expirada');
+  }
+
+  async function readErrorBody(response) {
+    try { return await response.text(); } catch (e) { return ''; }
+  }
+
+  // Éxito: cachea (modo offline), avisa y devuelve los datos.
+  async function finishSuccess(endpoint, response) {
+    var data = await response.json();
+    WC.store.cache(endpoint, data);
+    emit(EVENTS.SUCCESS, { endpoint: endpoint });
+    return data;
+  }
+
   async function request(endpoint) {
     var url = API_BASE + endpoint;
-    var retries = 0;
+    var state = { retries: 0 };
 
     while (true) {
       var response;
-
       try {
         response = await fetch(url, { method: 'GET', headers: authHeaders() });
       } catch (networkError) {
-        if (retries < MAX_RETRIES) {
-          var d = BASE_DELAYS[retries];
-          retries++;
-          await waitWithCountdown(
-            { endpoint: endpoint, status: 0, attempt: retries, maxAttempts: MAX_RETRIES }, d);
-          continue;
-        }
-        emit(EVENTS.GIVEUP, { endpoint: endpoint, status: 0 });
+        if (await scheduleRetry(endpoint, 0, state)) continue;
         throw new WC.HttpError(0, 'sin-conexion');
       }
 
-      if (response.status === 401) {
-        WC.store.clearToken();
-        emit(EVENTS.SESSION_EXPIRED, { endpoint: endpoint });
-        throw new WC.HttpError(401, 'sesion-expirada');
-      }
+      if (response.status === 401) handleUnauthorized(endpoint);
 
       if (RETRYABLE[response.status]) {
-        if (retries < MAX_RETRIES) {
-          var delay = BASE_DELAYS[retries];
-          retries++;
-          await waitWithCountdown(
-            { endpoint: endpoint, status: response.status, attempt: retries, maxAttempts: MAX_RETRIES },
-            delay);
-          continue; // reintenta el while
-        }
-        emit(EVENTS.GIVEUP, { endpoint: endpoint, status: response.status });
+        if (await scheduleRetry(endpoint, response.status, state)) continue;
         throw new WC.HttpError(response.status, 'reintentos-agotados');
       }
 
-      if (!response.ok) {
-        var info = '';
-        try { info = await response.text(); } catch (e) { info = ''; }
-        throw new WC.HttpError(response.status, info);
-      }
-
-      var data = await response.json();
-      WC.store.cache(endpoint, data);
-      emit(EVENTS.SUCCESS, { endpoint: endpoint });
-      return data;
+      if (!response.ok) throw new WC.HttpError(response.status, await readErrorBody(response));
+      return await finishSuccess(endpoint, response);
     }
   }
 
-
+  // Atajo con "modo offline" uniforme (éxito / caché stale / fallo).
   async function load(endpoint) {
     try {
       var data = await request(endpoint);

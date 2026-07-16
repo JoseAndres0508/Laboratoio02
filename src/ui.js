@@ -90,29 +90,32 @@
     if (status === 0) return 'Sin conexión';
     return 'Error del servidor (' + status + ')';
   }
+  function bannerHide() { if (banner) banner.className = 'status-banner hidden'; }
+  function bannerRetry(ev) {
+    var d = ev.detail; var b = ensureBanner();
+    b.className = 'status-banner';
+    b.textContent = '⏳ ' + labelFor(d.status) + ' · reintento ' + d.attempt + '/' + d.maxAttempts + ' en ' + d.waitSeconds + 's…';
+  }
+  function bannerCountdown(ev) {
+    var d = ev.detail; var b = ensureBanner();
+    b.className = 'status-banner';
+    b.textContent = '⏳ ' + labelFor(d.status) + ' · próximo reintento (' + d.attempt + '/' + d.maxAttempts + ') en ' + d.secondsLeft + ' s';
+  }
+  // Se agotaron los reintentos: pasamos el banner a estado de error (para que
+  // NO se quede congelado el countdown) y lo ocultamos tras unos segundos.
+  function bannerGiveup(ev) {
+    var d = ev.detail; var b = ensureBanner();
+    b.className = 'status-banner is-error';
+    b.textContent = '⚠️ ' + labelFor(d.status) + ' · no se pudo completar tras varios reintentos';
+    clearTimeout(b._hideTimer);
+    b._hideTimer = setTimeout(bannerHide, 5000);
+  }
   function wireBannerToApi() {
     var E = WC.api.EVENTS;
-    window.addEventListener(E.RETRY, function (ev) {
-      var d = ev.detail; var b = ensureBanner();
-      b.className = 'status-banner';
-      b.textContent = '⏳ ' + labelFor(d.status) + ' · reintento ' + d.attempt + '/' + d.maxAttempts + ' en ' + d.waitSeconds + 's…';
-    });
-    window.addEventListener(E.COUNTDOWN, function (ev) {
-      var d = ev.detail; var b = ensureBanner();
-      b.className = 'status-banner';
-      b.textContent = '⏳ ' + labelFor(d.status) + ' · próximo reintento (' + d.attempt + '/' + d.maxAttempts + ') en ' + d.secondsLeft + ' s';
-    });
-    window.addEventListener(E.SUCCESS, function () { if (banner) banner.className = 'status-banner hidden'; });
-    // Se agotaron los reintentos: cambiamos el banner a estado de error (para
-    // que NO se quede congelado el countdown) y lo ocultamos tras unos segundos.
-    // El detalle persistente del error lo muestra la vista con su botón "Reintentar".
-    window.addEventListener(E.GIVEUP, function (ev) {
-      var d = ev.detail; var b = ensureBanner();
-      b.className = 'status-banner is-error';
-      b.textContent = '⚠️ ' + labelFor(d.status) + ' · no se pudo completar tras varios reintentos';
-      clearTimeout(b._hideTimer);
-      b._hideTimer = setTimeout(function () { if (banner) banner.className = 'status-banner hidden'; }, 5000);
-    });
+    window.addEventListener(E.RETRY, bannerRetry);
+    window.addEventListener(E.COUNTDOWN, bannerCountdown);
+    window.addEventListener(E.SUCCESS, bannerHide);
+    window.addEventListener(E.GIVEUP, bannerGiveup);
   }
 
   // ---- Overlay de autenticación (login + registro / sesión expirada) ----
@@ -120,63 +123,82 @@
 
   function closeAuthOverlay() { var ex = document.getElementById('auth-overlay'); if (ex) ex.remove(); }
 
+  function authTexts(opts) {
+    return {
+      title: opts.expired ? 'Sesión expirada' : 'Iniciar sesión',
+      subtitle: opts.expired
+        ? 'Tu token JWT dejó de ser válido (401). Vuelve a autenticarte; la página no se recargó.'
+        : 'Regístrate (correo y clave inventados) o inicia sesión para obtener tu token JWT.'
+    };
+  }
+
+  // Construye los campos del formulario y guarda su estado (modo login/registro).
+  function buildAuthForm() {
+    var nameField = field('Nombre', 'text', 'user');
+    nameField.wrap.style.display = 'none';
+    var f = {
+      nameField: nameField,
+      emailField: field('Correo', 'email', 'envelope'),
+      passField: field('Contraseña', 'password', 'lock'),
+      errorBox: el('p', { class: 'help is-danger', style: 'display:none' }),
+      submit: el('button', { class: 'button is-primary is-fullwidth mt-2', type: 'button', text: 'Entrar' }),
+      toggle: el('a', { text: '¿No tienes cuenta? Regístrate' }),
+      mode: 'login'
+    };
+    return f;
+  }
+
+  // Refleja el modo actual (login/registro) en las etiquetas y campos.
+  function applyAuthMode(f) {
+    var reg = f.mode === 'register';
+    f.nameField.wrap.style.display = reg ? 'block' : 'none';
+    f.submit.textContent = reg ? 'Crear cuenta' : 'Entrar';
+    f.toggle.textContent = reg ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate';
+    f.errorBox.style.display = 'none';
+  }
+
+  async function submitAuth(f) {
+    f.errorBox.style.display = 'none';
+    f.submit.classList.add('is-loading');
+    try {
+      if (f.mode === 'register') await WC.auth.register(f.nameField.input.value.trim(), f.emailField.input.value.trim(), f.passField.input.value);
+      else await WC.auth.authenticate(f.emailField.input.value.trim(), f.passField.input.value);
+      closeAuthOverlay();
+      if (typeof onAuthSuccess === 'function') onAuthSuccess();
+    } catch (err) {
+      f.errorBox.textContent = 'No se pudo autenticar: ' + (err.info || err.message);
+      f.errorBox.style.display = 'block';
+    } finally {
+      f.submit.classList.remove('is-loading');
+    }
+  }
+
+  function wireAuthForm(f) {
+    f.toggle.addEventListener('click', function () { f.mode = (f.mode === 'login') ? 'register' : 'login'; applyAuthMode(f); });
+    f.submit.addEventListener('click', function () { submitAuth(f); });
+    f.passField.input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitAuth(f); });
+  }
+
+  function buildAuthCard(t, f) {
+    return el('div', { class: 'box', style: 'width:100%;max-width:400px' }, [
+      el('h2', { class: 'title is-4 mb-1' }, [el('span', { class: 'brand-ball', text: '⚽ ' }), t.title]),
+      el('p', { class: 'subtitle is-6 has-text-grey mb-4', text: t.subtitle }),
+      f.nameField.wrap, f.emailField.wrap, f.passField.wrap, f.errorBox, f.submit,
+      el('div', { class: 'has-text-centered mt-4' }, [f.toggle])
+    ]);
+  }
+
   function showAuthOverlay(opts) {
     opts = opts || {};
     closeAuthOverlay();
-    var title = opts.expired ? 'Sesión expirada' : 'Iniciar sesión';
-    var subtitle = opts.expired
-      ? 'Tu token JWT dejó de ser válido (401). Vuelve a autenticarte; la página no se recargó.'
-      : 'Regístrate (correo y clave inventados) o inicia sesión para obtener tu token JWT.';
-
-    var nameField = field('Nombre', 'text', 'user');
-    nameField.wrap.style.display = 'none';
-    var emailField = field('Correo', 'email', 'envelope');
-    var passField = field('Contraseña', 'password', 'lock');
-    var errorBox = el('p', { class: 'help is-danger', style: 'display:none' });
-    var submit = el('button', { class: 'button is-primary is-fullwidth mt-2', type: 'button', text: 'Entrar' });
-    var toggle = el('a', { text: '¿No tienes cuenta? Regístrate' });
-
-    var mode = 'login';
-    toggle.addEventListener('click', function () {
-      mode = (mode === 'login') ? 'register' : 'login';
-      nameField.wrap.style.display = (mode === 'register') ? 'block' : 'none';
-      submit.textContent = (mode === 'register') ? 'Crear cuenta' : 'Entrar';
-      toggle.textContent = (mode === 'register') ? '¿Ya tienes cuenta? Inicia sesión' : '¿No tienes cuenta? Regístrate';
-      errorBox.style.display = 'none';
-    });
-
-    async function doSubmit() {
-      errorBox.style.display = 'none';
-      submit.classList.add('is-loading');
-      try {
-        if (mode === 'register') await WC.auth.register(nameField.input.value.trim(), emailField.input.value.trim(), passField.input.value);
-        else await WC.auth.authenticate(emailField.input.value.trim(), passField.input.value);
-        closeAuthOverlay();
-        if (typeof onAuthSuccess === 'function') onAuthSuccess();
-      } catch (err) {
-        errorBox.textContent = 'No se pudo autenticar: ' + (err.info || err.message);
-        errorBox.style.display = 'block';
-      } finally {
-        submit.classList.remove('is-loading');
-      }
-    }
-    submit.addEventListener('click', doSubmit);
-    passField.input.addEventListener('keydown', function (e) { if (e.key === 'Enter') doSubmit(); });
-
-    var card = el('div', { class: 'box', style: 'width:100%;max-width:400px' }, [
-      el('h2', { class: 'title is-4 mb-1' }, [el('span', { class: 'brand-ball', text: '⚽ ' }), title]),
-      el('p', { class: 'subtitle is-6 has-text-grey mb-4', text: subtitle }),
-      nameField.wrap, emailField.wrap, passField.wrap, errorBox, submit,
-      el('div', { class: 'has-text-centered mt-4' }, [toggle])
-    ]);
-    var overlay = el('div', {
-      id: 'auth-overlay', class: 'modal is-active'
-    }, [
+    var f = buildAuthForm();
+    wireAuthForm(f);
+    var overlay = el('div', { id: 'auth-overlay', class: 'modal is-active' }, [
       el('div', { class: 'modal-background' }),
-      el('div', { class: 'modal-content' }, [card])
+      el('div', { class: 'modal-content' }, [buildAuthCard(authTexts(opts), f)])
     ]);
     document.body.appendChild(overlay);
-    emailField.input.focus();
+    f.emailField.input.focus();
   }
 
   function field(label, type, iconName) {

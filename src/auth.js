@@ -3,7 +3,7 @@
  * ----------------------------------------------------------------------------
  * Las rutas /auth/* son públicas (no llevan token todavía). Por eso usan su
  * propio fetch en lugar de WC.api.request (que está pensado para /get/* con
- * JWT + backoff). Aun así, mantenemos async/await y nada de .then()/.catch().
+ * JWT + backoff). Aun así, mantenemos async/await exclusivo (sin callbacks de promesa).
  * ========================================================================== */
 (function (WC) {
   'use strict';
