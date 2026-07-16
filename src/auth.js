@@ -42,10 +42,7 @@
     WC.store.setToken(data.token);
     return data.user;
   }
-
-  // Cerrar sesión: solo limpia el token guardado. NO recarga la página
-  // (window.location.reload está prohibido); el llamador se encarga de volver
-  // a mostrar el overlay de login.
+  
   function logout() {
     WC.store.clearToken();
   }

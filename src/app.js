@@ -19,9 +19,7 @@
     current = tab;
     [].forEach.call(tabList.children, function (li) { li.classList.toggle('is-active', li._id === tab.id); });
     viewRoot.innerHTML = '';
-    // try/await (NO .catch): si la vista rechaza por un 401, el modal de sesión
-    // expirada ya se mostró vía evento; evitamos un "unhandled rejection" en la
-    // Console. Para otros errores mostramos un aviso con reintento en la vista.
+
     try {
       await WC.views[tab.id].mount(viewRoot);
     } catch (err) {
@@ -33,22 +31,19 @@
   }
   function reloadCurrent() { activate(current || TABS[0]); }
 
-  // ---- Cerrar sesión ----
-  // Limpia el token (sin recargar la página) y vuelve a mostrar el login.
+
   function doLogout() {
     WC.auth.logout();
     if (viewRoot) viewRoot.innerHTML = '';
     refreshAuthUI();
     WC.ui.showAuthOverlay({ expired: false });
   }
-  // Muestra u oculta el botón de logout según haya sesión activa.
+
   function refreshAuthUI() {
     if (logoutBtn) logoutBtn.style.display = WC.auth.isLoggedIn() ? '' : 'none';
   }
 
-  // ---- Accesibilidad: escalado del tamaño de letra ----
-  // Guardamos el porcentaje en localStorage y lo aplicamos al <html>; como
-  // Bulma usa rem, todo el layout escala de forma proporcional.
+
   var FONT_MIN = 80, FONT_MAX = 150, FONT_STEP = 10, FONT_DEFAULT = 100;
   function currentFontScale() {
     var v = parseInt(WC.store.getPref('fontScale'), 10);
