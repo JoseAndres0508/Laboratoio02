@@ -70,6 +70,19 @@
   50% { opacity: .5; }
 }
 
+/* Dashboard: fondo inmersivo de estadio (resplandores, haces, chispas, bufanda) */
+@keyframes ambDrift1 { to { transform: translate(6vw, 4vh) scale(1.15); } }
+@keyframes ambDrift2 { to { transform: translate(-5vw, -3vh) scale(1.2); } }
+@keyframes beamSway1 { 0% { transform: rotate(9deg); } 100% { transform: rotate(16deg); } }
+@keyframes beamSway2 { 0% { transform: rotate(-17deg); } 100% { transform: rotate(-10deg); } }
+@keyframes sparkFloat {
+  0% { transform: translate(0, 0) scale(1); opacity: 0; }
+  10% { opacity: .7; }
+  90% { opacity: .5; }
+  100% { transform: translate(var(--drift, 0), -105vh) scale(.4); opacity: 0; }
+}
+@keyframes scarfSway { 0%, 100% { transform: rotate(-.6deg); } 50% { transform: rotate(.6deg); } }
+
 /* Aurora del header (manchas de color que se mueven despacio) */
 .topbar::before {
   content: ""; position: absolute; inset: -40% -10%; z-index: 0; pointer-events: none;

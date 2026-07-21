@@ -62,7 +62,36 @@
     ]);
   }
 
+  // Bufanda de hincha con el nombre repetido (icono clásico de tribuna).
+  function scarfBanner(team) {
+    var name = (team && team.name_en) ? team.name_en : 'MI EQUIPO';
+    return el('div', { class: 'dash-scarf' }, [el('span', { text: (name + '   ★   ').repeat(6) })]);
+  }
+
+  // ---------- Fondo inmersivo a pantalla completa (ambiente de estadio) ----------
+  function ambientSpark(i) {
+    var s = el('div', { class: 'amb-spark' });
+    s.style.left = (Math.random() * 100) + '%';
+    s.style.animationDelay = (Math.random() * 8) + 's';
+    s.style.animationDuration = (7 + Math.random() * 8) + 's';
+    s.style.setProperty('--drift', ((Math.random() * 2 - 1) * 60) + 'px');
+    return s;
+  }
+  function buildAmbient() {
+    var sparks = el('div', { class: 'amb-sparks' });
+    for (var i = 0; i < 18; i++) sparks.appendChild(ambientSpark(i));
+    return el('div', { class: 'dash-ambient' }, [
+      el('div', { class: 'amb-glow amb-glow-1' }),
+      el('div', { class: 'amb-glow amb-glow-2' }),
+      el('div', { class: 'amb-beam amb-beam-1' }),
+      el('div', { class: 'amb-beam amb-beam-2' }),
+      el('div', { class: 'amb-pitch' }),
+      sparks
+    ]);
+  }
+
   async function mount(root) {
+    root.appendChild(buildAmbient());
     var wrap = el('div', { class: 'dash-wrap' });
     root.appendChild(wrap);
 
@@ -105,11 +134,13 @@
 
     var currentId = null;
 
+    // Tiñe el equipo: variables en `root` para que el fondo inmersivo y la
+    // tarjeta reaccionen juntos al color del país.
     function applyTeamColor(hex) {
       var theme = document.documentElement.getAttribute('data-theme') || 'dark';
-      wrap.style.setProperty('--dash-accent', C.accentFor(hex, theme));
-      wrap.style.setProperty('--dash-bg', C.tintFor(hex, theme));
-      wrap.style.setProperty('--dash-inner', C.innerFor(hex, theme));
+      root.style.setProperty('--dash-accent', C.accentFor(hex, theme));
+      root.style.setProperty('--dash-bg', C.tintFor(hex, theme));
+      root.style.setProperty('--dash-inner', C.innerFor(hex, theme));
       WC.store.setPref(COL_KEY, hex);
       WC.applyFavTextColor(hex);
     }
@@ -136,6 +167,7 @@
       if (!currentId) return;
       if (stale) inner.appendChild(WC.ui.staleBadge());
       var team = teamsIndex[currentId];
+      inner.appendChild(scarfBanner(team));
       inner.appendChild(heroHeader(team, currentId));
       if (section === 'resumen') renderResumen();
       else if (section === 'partidos') renderPartidos();
