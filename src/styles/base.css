@@ -191,6 +191,57 @@ body {
 .dash-status.st-alive { color: #16A34A; }
 .dash-status.st-champ { color: var(--dash-accent, var(--accent)); font-size: 15px; }
 
+/* ---------- Dashboard: "Zona de fanático" (vistoso y reactivo al equipo) ---------- */
+/* Anillo interior que late en el color del equipo */
+.dash-card::after {
+  content: ''; position: absolute; inset: 0; border-radius: 16px; pointer-events: none; z-index: 2;
+  box-shadow: inset 0 0 0 2px var(--dash-accent, var(--accent));
+  opacity: .3; animation: cardGlow 2.8s ease-in-out infinite;
+}
+.dash-hero {
+  position: relative; display: flex; flex-direction: column; align-items: center; text-align: center;
+  gap: 10px; margin-bottom: 18px; padding-top: 6px;
+}
+.dash-hero > *:not(.dash-aura) { position: relative; z-index: 1; }
+/* Aura de color que se mueve detrás de la cabecera */
+.dash-aura {
+  position: absolute; inset: -34px -34px auto -34px; height: 190px; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(60% 80% at 30% 20%, var(--dash-accent, var(--accent)), transparent 60%),
+    radial-gradient(55% 75% at 78% 30%, var(--dash-accent, var(--accent)), transparent 62%);
+  opacity: .22; filter: blur(26px); animation: dashAura 7s ease-in-out infinite alternate;
+}
+/* Bandera ondeante + halo */
+.dash-flagwrap { position: relative; width: 100px; height: 70px; display: flex; align-items: center; justify-content: center; }
+.dash-halo {
+  position: absolute; inset: -16px; border-radius: 50%;
+  background: radial-gradient(circle, var(--dash-accent, var(--accent)) 0%, transparent 68%);
+  opacity: .5; animation: haloPulse 2.4s ease-in-out infinite;
+}
+.dash-flag-big {
+  position: relative; width: 92px; height: 62px; object-fit: cover; border-radius: 8px;
+  border: 2px solid rgba(255, 255, 255, .8); box-shadow: 0 8px 22px rgba(0, 0, 0, .35);
+  transform-origin: left center; animation: flagWave 2.6s ease-in-out infinite;
+}
+.dash-flag-none { display: flex; align-items: center; justify-content: center; background: var(--dash-accent, var(--accent)); color: #fff; font-size: 26px; animation: none; }
+/* Nombre gigante con brillo en los colores del país */
+.dash-name-big {
+  font-family: var(--font-display); font-weight: 700; letter-spacing: .5px; line-height: 1.05;
+  font-size: clamp(26px, 7vw, 42px); text-transform: uppercase;
+  background: linear-gradient(90deg, var(--dash-accent, var(--accent)) 0%, #ffffff 45%, var(--dash-accent, var(--accent)) 62%);
+  background-size: 220% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: nameShine 3.2s linear infinite;
+}
+/* Pastilla de cántico pulsante */
+.dash-chant {
+  display: inline-flex; align-items: center; gap: 7px;
+  font-family: var(--font-display); font-weight: 700; letter-spacing: 1px; font-size: 14px;
+  padding: 5px 16px; border-radius: 999px; color: #fff;
+  background: var(--dash-accent, var(--accent)); box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
+  animation: hypePulse 1.6s ease-in-out infinite;
+}
+.dash-hero .dash-tag { margin-left: 0; }
+
 /* ---------- Footer ---------- */
 .app-footer { margin-top: auto; width: 100%; }
 .app-footer-stripe { height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent-2), var(--accent-3)); }

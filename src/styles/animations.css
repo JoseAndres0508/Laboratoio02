@@ -45,6 +45,31 @@
   100% { transform: translate(var(--x, 0), 340px) rotate(var(--rot, 360deg)); opacity: 0; }
 }
 
+/* Dashboard "Zona de fanático": bandera ondeante, halo, nombre con brillo, aura */
+@keyframes flagWave {
+  0%, 100% { transform: rotate(-1.5deg) skewY(0deg); }
+  25% { transform: rotate(1deg) skewY(-1.5deg); }
+  50% { transform: rotate(-0.5deg) skewY(1deg); }
+  75% { transform: rotate(1.5deg) skewY(-0.8deg); }
+}
+@keyframes haloPulse {
+  0%, 100% { transform: scale(.9); opacity: .35; }
+  50% { transform: scale(1.12); opacity: .6; }
+}
+@keyframes nameShine { to { background-position: -220% 0; } }
+@keyframes dashAura {
+  0% { transform: translate3d(-4%, 0, 0) scale(1); }
+  100% { transform: translate3d(4%, 3%, 0) scale(1.1); }
+}
+@keyframes hypePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+}
+@keyframes cardGlow {
+  0%, 100% { opacity: .2; }
+  50% { opacity: .5; }
+}
+
 /* Aurora del header (manchas de color que se mueven despacio) */
 .topbar::before {
   content: ""; position: absolute; inset: -40% -10%; z-index: 0; pointer-events: none;

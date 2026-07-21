@@ -31,6 +31,37 @@
     return mine > opp || (mine === opp && mp > op);
   }
 
+  // ---------- "Zona de fanático": cabecera vistosa y reactiva al equipo ----------
+  function fifaOf(team) { return (team && (team.fifa_code || team.code || team.abbreviation)) || ''; }
+
+  // Bandera ondeante con halo pulsante detrás.
+  function wavingFlag(team) {
+    var wrap = el('div', { class: 'dash-flagwrap' }, [el('div', { class: 'dash-halo' })]);
+    if (team && team.flag) wrap.appendChild(el('img', { class: 'dash-flag-big', src: team.flag, alt: '' }));
+    else wrap.appendChild(el('div', { class: 'dash-flag-big dash-flag-none' }, [WC.ui.icon('futbol')]));
+    return wrap;
+  }
+
+  // Pastilla de cántico: "¡VAMOS <CÓDIGO>!"
+  function chantPill(team) {
+    var code = fifaOf(team);
+    return el('div', { class: 'dash-chant' }, [
+      WC.ui.icon('fire'),
+      el('span', { text: '¡VAMOS' + (code ? ' ' + code : '') + '!' })
+    ]);
+  }
+
+  function heroHeader(team, id) {
+    var name = team ? team.name_en : ('Equipo ' + id);
+    return el('div', { class: 'dash-hero' }, [
+      el('div', { class: 'dash-aura' }),
+      wavingFlag(team),
+      el('div', { class: 'dash-name-big', text: name }),
+      chantPill(team),
+      el('span', { class: 'dash-tag', text: 'Grupo ' + (team ? (team.groups || '?') : '?') })
+    ]);
+  }
+
   async function mount(root) {
     var wrap = el('div', { class: 'dash-wrap' });
     root.appendChild(wrap);
@@ -89,7 +120,15 @@
       var team = teamsIndex[id];
       if (team && team.flag) C.extractFlag(team.flag, function (hex) { if (currentId === id) applyTeamColor(hex || C.fallbackHex(id)); });
       renderPanel();
-      if (teamStatus(id).cls === 'st-champ') confetti(card, [C.fallbackHex(id), '#FBCB3A', '#ffffff', '#FF6B35', '#0FB5A6']);
+      celebrate(id);
+    }
+
+    // Estalla confeti en los colores del equipo (más grande si es campeón).
+    function celebrate(id) {
+      var hex = C.fallbackHex(id);
+      var theme = document.documentElement.getAttribute('data-theme') || 'dark';
+      var champ = teamStatus(id).cls === 'st-champ';
+      confetti(card, [hex, '#ffffff', C.accentFor(hex, theme), '#FBCB3A'], champ ? 90 : 42);
     }
 
     function renderPanel() {
@@ -97,11 +136,7 @@
       if (!currentId) return;
       if (stale) inner.appendChild(WC.ui.staleBadge());
       var team = teamsIndex[currentId];
-      inner.appendChild(el('div', { class: 'dash-head' }, [
-        team && team.flag ? el('img', { class: 'dash-flag2', src: team.flag, alt: '' }) : el('span'),
-        el('div', { class: 'dash-name', text: team ? team.name_en : 'Equipo ' + currentId }),
-        el('span', { class: 'dash-tag', text: 'Grupo ' + (team ? (team.groups || '?') : '?') })
-      ]));
+      inner.appendChild(heroHeader(team, currentId));
       if (section === 'resumen') renderResumen();
       else if (section === 'partidos') renderPartidos();
       else renderGrupo();
@@ -185,20 +220,22 @@
     if (initial) { select.value = initial; selectTeam(initial); }
   }
 
-  function confetti(host, colors) {
-    colors = (colors && colors.length) ? colors : ['#FF6B35','#0FB5A6','#FBCB3A'];
+  function confettiPiece(colors, i) {
+    var p = WC.ui.el('div', { class: 'confetti-piece' });
+    p.style.left = (Math.random() * 100) + '%';
+    p.style.background = colors[i % colors.length];
+    p.style.animationDelay = (Math.random() * 0.35) + 's';
+    p.style.animationDuration = (1.5 + Math.random() * 1.3) + 's';
+    p.style.setProperty('--x', ((Math.random() * 2 - 1) * 90) + 'px');
+    p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
+    return p;
+  }
+  function confetti(host, colors, count) {
+    colors = (colors && colors.length) ? colors : ['#FF6B35', '#0FB5A6', '#FBCB3A'];
+    count = count || 52;
     var layer = WC.ui.el('div', { class: 'confetti-layer' });
     host.appendChild(layer);
-    for (var i = 0; i < 52; i++) {
-      var p = WC.ui.el('div', { class: 'confetti-piece' });
-      p.style.left = (Math.random() * 100) + '%';
-      p.style.background = colors[i % colors.length];
-      p.style.animationDelay = (Math.random() * 0.35) + 's';
-      p.style.animationDuration = (1.5 + Math.random() * 1.3) + 's';
-      p.style.setProperty('--x', ((Math.random() * 2 - 1) * 90) + 'px');
-      p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
-      layer.appendChild(p);
-    }
+    for (var i = 0; i < count; i++) layer.appendChild(confettiPiece(colors, i));
     setTimeout(function () { layer.remove(); }, 3200);
   }
 
