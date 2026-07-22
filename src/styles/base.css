@@ -230,6 +230,13 @@ body {
 .ko-away { text-align: right; }
 .ko-mid { font-weight: 800; color: var(--accent); min-width: 54px; text-align: center; }
 
+/* En pantallas pequeñas los cards se apilan a ancho completo: centramos el
+   contenido interno (título + tabla) para que no quede pegado a la izquierda. */
+@media (max-width: 768px) {
+  .matriz-cols .box { text-align: center; }
+  .matriz-cols .matriz-table { margin-left: auto; margin-right: auto; }
+}
+
 /* ---------- Dashboard ---------- */
 .dash-wrap { max-width: 470px; margin: 0 auto; }
 .dash-wrap .label { text-align: center; }
