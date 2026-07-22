@@ -210,13 +210,20 @@ body {
 .bm-win .bm-name { font-weight: 700; }
 
 /* ---------- Matriz ---------- */
+/* Rejilla centrada: el contenido no ocupa todo el ancho, queda al medio
+   (deja margen a los lados) y fluye en dos columnas responsivas. */
+/* Ancho reducido y centrado: en pantallas anchas los dos cards quedan en el
+   medio (como columnas 2-3 de 4), con margen visible a los lados. Aplica por
+   igual a grupos y a rondas de eliminatoria. */
+.matriz-cols { max-width: 760px; margin-left: auto; margin-right: auto; }
 .matriz-table td.cell { text-align: center; min-width: 62px; }
 .matriz-table td.pending { color: var(--muted); font-style: italic; }
 .matriz-table td.played { font-weight: 800; color: var(--accent); }
 .matriz-table td.diag {
   background: repeating-linear-gradient(45deg, rgba(255,255,255,.04), rgba(255,255,255,.04) 6px, transparent 6px, transparent 12px);
 }
-.ko-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 4px 20px; }
+/* Dentro de un card a media anchura, la lista de llaves va en una sola columna. */
+.ko-grid { display: grid; grid-template-columns: 1fr; gap: 4px 20px; }
 .ko-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 4px; border-bottom: 1px solid var(--border); font-size: .9rem; }
 .ko-row:last-child { border-bottom: none; }
 .ko-side { flex: 1; }

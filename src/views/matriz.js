@@ -32,7 +32,7 @@
   // ---------- Vista ----------
   async function mount(root) {
     var chipsRow = el('div', { class: 'chips' });
-    var container = el('div', { class: 'columns is-multiline' });
+    var container = el('div', { class: 'columns is-multiline is-centered matriz-cols' });
     var note = el('div', { class: 'mt-3' });
     root.appendChild(chipsRow); root.appendChild(container); root.appendChild(note);
 
@@ -105,7 +105,7 @@
           el('span', { class: 'ko-side ko-away', text: koName(g, 'away') })
         ]));
       });
-      return el('div', { class: 'column is-full' }, [el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: name }), list])]);
+      return el('div', { class: 'column is-half' }, [el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: name }), list])]);
     }
 
     // Parchea SOLO las celdas ya jugadas (no reconstruye la matriz).
