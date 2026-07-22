@@ -46,6 +46,16 @@ body {
 }
 .hero-controls .button { border-radius: 999px; }
 
+/* Indicador de conexión: punto verde (en línea) / rojo (sin conexión) */
+.conn-dot {
+  width: 12px; height: 12px; border-radius: 50%; flex: none;
+  background: #9a9a9a; box-shadow: 0 0 0 3px rgba(255,255,255,.06);
+  cursor: default; transition: background-color .2s ease;
+}
+.conn-dot.is-online { background: #16A34A; box-shadow: 0 0 6px #16A34A; }
+.conn-dot.is-offline { background: #E5484D; box-shadow: 0 0 6px #E5484D; animation: connPulse 1.6s ease-in-out infinite; }
+@keyframes connPulse { 0%, 100% { opacity: 1; } 50% { opacity: .45; } }
+
 /* Controles de tamaño de letra: la "A" crece de menor a mayor */
 .font-controls { display: inline-flex; align-items: center; gap: 4px; }
 .font-controls .button { border-radius: 999px; padding-left: 10px; padding-right: 10px; }

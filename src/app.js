@@ -102,7 +102,9 @@
   }
 
   function buildHero() {
-    var controls = el('div', { class: 'hero-controls' }, [buildFontControls(), buildThemeButton(), buildLogoutButton()]);
+    var controls = el('div', { class: 'hero-controls' }, [
+      buildFontControls(), buildThemeButton(), buildLogoutButton(), WC.ui.connectionDot()
+    ]);
     return el('section', { class: 'app-hero' }, [
       el('div', { class: 'container hero-inner' }, [
         controls,

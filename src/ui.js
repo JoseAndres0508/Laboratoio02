@@ -77,6 +77,23 @@
     return t;
   }
 
+  // ---- Indicador de conexión (punto verde/rojo) ----
+  function updateConnDot(dot) {
+    var online = navigator.onLine;
+    dot.classList.toggle('is-online', online);
+    dot.classList.toggle('is-offline', !online);
+    dot.setAttribute('title', online ? 'En línea' : 'Sin conexión');
+    dot.setAttribute('aria-label', online ? 'En línea' : 'Sin conexión');
+  }
+
+  function connectionDot() {
+    var dot = el('span', { class: 'conn-dot' });
+    updateConnDot(dot);
+    window.addEventListener('online', function () { updateConnDot(dot); });
+    window.addEventListener('offline', function () { updateConnDot(dot); });
+    return dot;
+  }
+
   // ---- Banner de estado (reintentos / countdown 429-500) ----
   var banner = null;
   function ensureBanner() {
@@ -215,7 +232,7 @@
 
   WC.ui = {
     el: el, icon: icon, staleBadge: staleBadge, skeleton: skeleton, errorNotice: errorNotice,
-    subtabs: subtabs, chip: chip, wireBannerToApi: wireBannerToApi,
+    subtabs: subtabs, chip: chip, wireBannerToApi: wireBannerToApi, connectionDot: connectionDot,
     showAuthOverlay: showAuthOverlay, closeAuthOverlay: closeAuthOverlay,
     setAuthSuccessHandler: function (fn) { onAuthSuccess = fn; }
   };
