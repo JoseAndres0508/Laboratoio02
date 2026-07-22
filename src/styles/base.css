@@ -39,7 +39,9 @@ body {
 .app-hero { padding: 22px 0 6px; }
 .hero-inner { position: relative; }
 
-/* Barra de controles (accesibilidad + tema + salir) arriba a la derecha */
+/* Barra de controles (salir + estado de conexión) arriba a la derecha.
+   Se mantiene siempre visible y fuera del flujo del título para no
+   solaparse con él en pantallas angostas. */
 .hero-controls {
   position: absolute; top: 0; right: 0;
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end;
@@ -70,10 +72,54 @@ body {
   .hero-controls { position: static; justify-content: center; margin-bottom: 12px; }
 }
 
+/* ---------- Botón flotante de accesibilidad (letra + tema) ---------- */
+/* Fijo cerca del footer, visible en cualquier tamaño de pantalla. */
+.a11y-fab-wrap { position: fixed; right: 18px; bottom: 18px; z-index: 50; }
+.a11y-fab {
+  width: 50px; height: 50px; border-radius: 50%; border: 1px solid var(--border);
+  background: var(--accent); color: #fff; font-size: 19px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  box-shadow: 0 10px 24px rgba(0,0,0,.35);
+}
+.a11y-fab:hover { filter: brightness(1.06); }
+.a11y-panel {
+  position: absolute; right: 0; bottom: 60px; min-width: 190px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+  padding: 12px; box-shadow: 0 14px 34px rgba(0,0,0,.4);
+  display: flex; flex-direction: column; align-items: flex-start; gap: 8px;
+}
+.a11y-panel.is-hidden { display: none; }
+.a11y-panel-label { font-size: .68rem; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; font-weight: 700; }
+.a11y-panel .button.is-dark { border-radius: 999px; }
+
 /* Pestañas principales */
 .main-tabs.tabs a { color: var(--text); font-weight: 600; }
 .main-tabs.tabs a:hover { background: var(--surface-2); border-bottom-color: var(--border); }
 .main-tabs.tabs li.is-active a { background: var(--surface); border-color: var(--border); border-bottom-color: var(--surface); color: var(--accent); }
+
+/* ---------- Menú hamburguesa de pestañas (pantallas pequeñas) ---------- */
+.tabs-bar { position: relative; }
+.tabs-burger {
+  display: none; margin: 0 auto 10px; width: 42px; height: 42px; padding: 0;
+  border-radius: 10px; border: 1px solid var(--border); background: var(--surface-2);
+  flex-direction: column; align-items: center; justify-content: center; gap: 5px; cursor: pointer;
+}
+.tabs-burger span { width: 20px; height: 2px; background: var(--text); border-radius: 2px; transition: transform .2s ease, opacity .2s ease; }
+.tabs-burger.is-active span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.tabs-burger.is-active span:nth-child(2) { opacity: 0; }
+.tabs-burger.is-active span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+@media (max-width: 768px) {
+  .tabs-burger { display: flex; }
+  .main-tabs { display: none; }
+  .main-tabs.is-open {
+    display: flex; flex-direction: column; overflow-x: visible;
+    border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: 6px;
+  }
+  .main-tabs.is-open ul { flex-direction: column; width: 100%; }
+  .main-tabs.is-open li { width: 100%; }
+  .main-tabs.is-open a { justify-content: flex-start; border-radius: 8px !important; }
+}
 
 /* Sub-tabs */
 .subtabs { margin: 6px 0 18px; }

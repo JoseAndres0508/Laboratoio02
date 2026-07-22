@@ -14,6 +14,7 @@
   ];
 
   var viewRoot, tabList, themeBtn, logoutBtn, current = null;
+  var tabsWrapEl, tabsBurgerEl;
 
   async function activate(tab) {
     current = tab;
@@ -102,9 +103,9 @@
   }
 
   function buildHero() {
-    var controls = el('div', { class: 'hero-controls' }, [
-      buildFontControls(), buildThemeButton(), buildLogoutButton(), WC.ui.connectionDot()
-    ]);
+    // Solo Salir + estado de conexión quedan fijos junto al título; el resto
+    // de opciones (letra/tema) se mueven al botón flotante de accesibilidad.
+    var controls = el('div', { class: 'hero-controls' }, [buildLogoutButton(), WC.ui.connectionDot()]);
     return el('section', { class: 'app-hero' }, [
       el('div', { class: 'container hero-inner' }, [
         controls,
@@ -116,6 +117,34 @@
     ]);
   }
 
+  // ---- Botón flotante de accesibilidad (tamaño de letra + tema) ----
+  function toggleA11yPanel(fab, panel) {
+    panel.classList.toggle('is-hidden');
+    var open = !panel.classList.contains('is-hidden');
+    fab.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function closeA11yPanelOnOutsideClick(e, fab, panel) {
+    if (panel.classList.contains('is-hidden')) return;
+    if (panel.contains(e.target) || fab.contains(e.target)) return;
+    toggleA11yPanel(fab, panel);
+  }
+
+  function buildAccessibilityFab() {
+    var panel = el('div', { class: 'a11y-panel is-hidden' }, [
+      el('span', { class: 'a11y-panel-label', text: 'Tamaño de letra' }),
+      buildFontControls(),
+      el('span', { class: 'a11y-panel-label', text: 'Tema' }),
+      buildThemeButton()
+    ]);
+    var fab = el('button', {
+      class: 'a11y-fab', 'aria-label': 'Opciones de accesibilidad', title: 'Accesibilidad', 'aria-expanded': 'false'
+    }, [el('span', { class: 'icon' }, [el('i', { class: 'fas fa-universal-access' })])]);
+    fab.addEventListener('click', function () { toggleA11yPanel(fab, panel); });
+    document.addEventListener('click', function (e) { closeA11yPanelOnOutsideClick(e, fab, panel); });
+    return el('div', { class: 'a11y-fab-wrap' }, [panel, fab]);
+  }
+
   function buildTabItem(t) {
     var a = el('a', {}, [
       el('span', { class: 'icon is-small' }, [el('i', { class: 'fas fa-' + t.icon })]),
@@ -123,14 +152,38 @@
     ]);
     var li = el('li', {}, [a]);
     li._id = t.id;
-    a.addEventListener('click', function () { activate(t); });
+    a.addEventListener('click', function () { activate(t); closeTabsMenu(); });
     return li;
+  }
+
+  // ---- Menú hamburguesa de secciones (pantallas pequeñas) ----
+  function toggleTabsMenu() {
+    var open = tabsWrapEl.classList.toggle('is-open');
+    tabsBurgerEl.classList.toggle('is-active', open);
+    tabsBurgerEl.setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+
+  function closeTabsMenu() {
+    if (!tabsWrapEl || !tabsWrapEl.classList.contains('is-open')) return;
+    tabsWrapEl.classList.remove('is-open');
+    tabsBurgerEl.classList.remove('is-active');
+    tabsBurgerEl.setAttribute('aria-expanded', 'false');
+  }
+
+  function buildTabsBurger() {
+    var b = el('button', {
+      class: 'tabs-burger', 'aria-label': 'Abrir menú de secciones', 'aria-expanded': 'false'
+    }, [el('span'), el('span'), el('span')]);
+    b.addEventListener('click', toggleTabsMenu);
+    return b;
   }
 
   function buildTabs() {
     tabList = el('ul');
     TABS.forEach(function (t) { tabList.appendChild(buildTabItem(t)); });
-    return el('div', { class: 'container' }, [el('div', { class: 'tabs is-boxed is-centered main-tabs' }, [tabList])]);
+    tabsBurgerEl = buildTabsBurger();
+    tabsWrapEl = el('div', { class: 'tabs is-boxed is-centered main-tabs' }, [tabList]);
+    return el('div', { class: 'container tabs-bar' }, [tabsBurgerEl, tabsWrapEl]);
   }
 
   function buildFooter() {
@@ -147,6 +200,7 @@
     document.body.appendChild(topbar);
     document.body.appendChild(content);
     document.body.appendChild(buildFooter());
+    document.body.appendChild(buildAccessibilityFab());
     refreshThemeBtn();
     refreshAuthUI();
   }
