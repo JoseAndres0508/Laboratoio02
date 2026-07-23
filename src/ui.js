@@ -78,12 +78,22 @@
   }
 
   // ---- Indicador de conexión (punto verde/rojo) ----
-  function updateConnDot(dot) {
-    var online = navigator.onLine;
+  // Pinta el estado. navigator.onLine solo ve la interfaz de red (WiFi "sin
+  // internet" reporta true), así que también escuchamos los resultados reales
+  // de api.js: fallo de red (status 0) => rojo, respuesta exitosa => verde.
+  function paintConnDot(dot, online) {
     dot.classList.toggle('is-online', online);
     dot.classList.toggle('is-offline', !online);
     dot.setAttribute('title', online ? 'En línea' : 'Sin conexión');
     dot.setAttribute('aria-label', online ? 'En línea' : 'Sin conexión');
+  }
+  function updateConnDot(dot) { paintConnDot(dot, navigator.onLine); }
+
+  function wireConnDotToApi(dot) {
+    var E = WC.api.EVENTS;
+    window.addEventListener(E.SUCCESS, function () { paintConnDot(dot, true); });
+    window.addEventListener(E.RETRY, function (e) { if (e.detail && e.detail.status === 0) paintConnDot(dot, false); });
+    window.addEventListener(E.GIVEUP, function (e) { if (e.detail && e.detail.status === 0) paintConnDot(dot, false); });
   }
 
   function connectionDot() {
@@ -91,6 +101,7 @@
     updateConnDot(dot);
     window.addEventListener('online', function () { updateConnDot(dot); });
     window.addEventListener('offline', function () { updateConnDot(dot); });
+    wireConnDotToApi(dot);
     return dot;
   }
 
