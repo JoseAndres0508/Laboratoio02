@@ -27,8 +27,10 @@
     return node;
   }
 
+  // Devuelve un ícono de Font Awesome.
   function icon(name) { return el('span', { class: 'icon' }, [el('i', { class: 'fas fa-' + name })]); }
 
+  // Insignia de datos offline (no actualizados).
   function staleBadge() {
     return el('div', { class: 'stale-badge' }, [
       el('span', { class: 'icon is-small' }, [el('i', { class: 'fas fa-triangle-exclamation' })]),
@@ -36,12 +38,14 @@
     ]);
   }
 
+  // Placeholder de carga (barras esqueleto).
   function skeleton(lines) {
     var wrap = el('div', {});
     for (var i = 0; i < (lines || 3); i++) wrap.appendChild(el('div', { class: 'skel skel-line' }));
     return wrap;
   }
 
+  // Notificación de error con botón reintentar.
   function errorNotice(msg, onRetry) {
     var box = el('div', { class: 'notification is-danger is-light' });
     box.appendChild(el('p', {}, [msg]));
@@ -87,8 +91,10 @@
     dot.setAttribute('title', online ? 'En línea' : 'Sin conexión');
     dot.setAttribute('aria-label', online ? 'En línea' : 'Sin conexión');
   }
+  // Refresca el punto según navigator.onLine.
   function updateConnDot(dot) { paintConnDot(dot, navigator.onLine); }
 
+  // Conecta el punto a los eventos de red de api.js.
   function wireConnDotToApi(dot) {
     var E = WC.api.EVENTS;
     window.addEventListener(E.SUCCESS, function () { paintConnDot(dot, true); });
@@ -107,23 +113,28 @@
 
   // ---- Banner de estado (reintentos / countdown 429-500) ----
   var banner = null;
+  // Crea o reutiliza el banner inferior.
   function ensureBanner() {
     if (banner) return banner;
     banner = el('div', { class: 'status-banner hidden' });
     document.body.appendChild(banner);
     return banner;
   }
+  // Traduce un código de estado a texto.
   function labelFor(status) {
     if (status === 429) return 'Límite de peticiones (429)';
     if (status === 0) return 'Sin conexión';
     return 'Error del servidor (' + status + ')';
   }
+  // Oculta el banner de estado.
   function bannerHide() { if (banner) banner.className = 'status-banner hidden'; }
+  // Muestra el banner de reintento.
   function bannerRetry(ev) {
     var d = ev.detail; var b = ensureBanner();
     b.className = 'status-banner';
     b.textContent = '⏳ ' + labelFor(d.status) + ' · reintento ' + d.attempt + '/' + d.maxAttempts + ' en ' + d.waitSeconds + 's…';
   }
+  // Actualiza la cuenta regresiva del banner.
   function bannerCountdown(ev) {
     var d = ev.detail; var b = ensureBanner();
     b.className = 'status-banner';
@@ -138,6 +149,7 @@
     clearTimeout(b._hideTimer);
     b._hideTimer = setTimeout(bannerHide, 5000);
   }
+  // Conecta los eventos de api.js con el banner.
   function wireBannerToApi() {
     var E = WC.api.EVENTS;
     window.addEventListener(E.RETRY, bannerRetry);
@@ -149,8 +161,10 @@
   // ---- Overlay de autenticación (login + registro / sesión expirada) ----
   var onAuthSuccess = null;
 
+  // Cierra el modal de acceso.
   function closeAuthOverlay() { var ex = document.getElementById('auth-overlay'); if (ex) ex.remove(); }
 
+  // Textos del modal según login o sesión expirada.
   function authTexts(opts) {
     return {
       title: opts.expired ? 'Sesión expirada' : 'Iniciar sesión',
@@ -185,6 +199,7 @@
     f.errorBox.style.display = 'none';
   }
 
+  // Envía el formulario de login/registro.
   async function submitAuth(f) {
     f.errorBox.style.display = 'none';
     f.submit.classList.add('is-loading');
@@ -201,12 +216,14 @@
     }
   }
 
+  // Conecta los eventos del formulario de acceso.
   function wireAuthForm(f) {
     f.toggle.addEventListener('click', function () { f.mode = (f.mode === 'login') ? 'register' : 'login'; applyAuthMode(f); });
     f.submit.addEventListener('click', function () { submitAuth(f); });
     f.passField.input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submitAuth(f); });
   }
 
+  // Arma la tarjeta del modal de acceso.
   function buildAuthCard(t, f) {
     return el('div', { class: 'box', style: 'width:100%;max-width:400px' }, [
       el('h2', { class: 'title is-4 mb-1' }, [el('span', { class: 'brand-ball', text: '⚽ ' }), t.title]),
@@ -216,6 +233,7 @@
     ]);
   }
 
+  // Muestra el modal de acceso.
   function showAuthOverlay(opts) {
     opts = opts || {};
     closeAuthOverlay();
@@ -229,6 +247,7 @@
     f.emailField.input.focus();
   }
 
+  // Construye un campo de formulario con ícono.
   function field(label, type, iconName) {
     var input = el('input', { class: 'input', type: type, placeholder: label });
     var control = el('div', { class: 'control has-icons-left' }, [

@@ -10,6 +10,7 @@
 
   var API_BASE = WC.api.API_BASE;
 
+  // POST con JSON y manejo de error.
   async function postJson(path, payload) {
     var res = await fetch(API_BASE + path, {
       method: 'POST',
@@ -43,6 +44,7 @@
     return data.user;
   }
   
+  // Cierra sesión borrando el token.
   function logout() {
     WC.store.clearToken();
   }

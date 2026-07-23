@@ -16,9 +16,13 @@
   // Rondas que se muestran en el bracket (octavos en adelante), en orden.
   var BRACKET = [['r16', 'Octavos'], ['qf', 'Cuartos'], ['sf', 'Semifinales'], ['final', 'Final'], ['third', '3.º puesto']];
 
+  // Convierte texto a fecha (o null).
   function toDate(s) { var d = new Date(s); return isNaN(d) ? null : d; }
+  // Fecha corta legible.
   function shortDate(s) { var d = toDate(s); return d ? (DIAS[d.getDay()] + ' ' + d.getDate() + ' ' + MESES[d.getMonth()]) : s; }
+  // Hora HH:MM (o vacío).
   function hourLabel(s) { var d = toDate(s); if (!d || (d.getHours() === 0 && d.getMinutes() === 0)) return ''; return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  // Clave numérica para ordenar por fecha.
   function orderKey(s) { var d = toDate(s); return d ? d.getTime() : Number.MAX_SAFE_INTEGER; }
 
   // ---------- Tarjetas y filas ----------
@@ -28,6 +32,7 @@
       el('span', { class: 'bm-score', text: (score === '' ? '' : String(score)) })
     ]);
   }
+  // Tarjeta de un partido.
   function card(g, nameOf) {
     var dt = shortDate(g.local_date) + (hourLabel(g.local_date) ? (' · ' + hourLabel(g.local_date)) : '');
     var label = g.type === 'group' ? ('Grupo ' + g.group + ' · J' + g.matchday) : (TYPE_LABEL[g.type] || 'Eliminatoria');
@@ -63,6 +68,7 @@
       return { label: d[1], games: gs };
     }).filter(function (r) { return r.games.length > 0; });
   }
+  // Enfrentamiento del bracket con marcador.
   function bracketMatch(g, sideName) {
     var fin = U.isFinished(g);
     var hs = Number(g.home_score), as = Number(g.away_score);
@@ -74,6 +80,7 @@
       teamRow(sideName(g, 'away'), fin ? g.away_score : '', aw)
     ]);
   }
+  // Columna (ronda) del bracket.
   function bracketColumn(r, sideName) {
     var col = el('div', { class: 'bracket-col' });
     col.appendChild(el('p', { class: 'bracket-round', text: r.label }));
@@ -101,6 +108,7 @@
     if (gamesRes.stale || teamsRes.stale) root.insertBefore(WC.ui.staleBadge(), body);
 
     var teamsIndex = U.indexById(U.asArray(teamsRes.ok ? teamsRes.data : []));
+    // Nombre del equipo por id.
     function nameOf(id) { var t = teamsIndex[id]; return t ? (t.name_en || t.name_fa || ('Equipo ' + id)) : 'Por definir'; }
     // Nombre de un lado del partido: embebido -> equipo -> etiqueta ("Winner Match 74").
     function sideName(g, side) {
@@ -115,6 +123,7 @@
     var allGames = U.asArray(gamesRes.data).slice().sort(function (a, b) { return orderKey(a.local_date) - orderKey(b.local_date); });
     var observer = null;
 
+    // Renderiza el modo elegido.
     function render(mode) {
       if (observer) { observer.disconnect(); observer = null; }
       body.innerHTML = '';
@@ -122,6 +131,7 @@
       else renderGrid(mode === 'jugados');
     }
 
+    // Grid de partidos con scroll infinito.
     function renderGrid(onlyFinished) {
       var list = onlyFinished ? allGames.filter(function (g) { return U.isFinished(g); }) : allGames;
       var status = el('p', { class: 'has-text-grey is-size-7 mb-2' });
@@ -131,6 +141,7 @@
       if (!list.length) { status.textContent = 'No hay partidos en este filtro.'; return; }
 
       var loader = makeGridLoader(list, grid, status, sentinel, nameOf);
+      // Inserta más partidos al hacer scroll.
       function loadMore() {
         var guard = 0;
         while (!loader.done() && loader.inView() && guard < 500) { loader.insertBlock(); guard++; }
@@ -145,6 +156,7 @@
       }
     }
 
+    // Dibuja el cuadro de eliminatorias.
     function renderBracket() {
       body.appendChild(el('p', { class: 'has-text-grey is-size-7 mb-3', text: 'Cuadro de eliminatorias — marcador si ya se jugó, o los equipos por definir.' }));
       var rounds = bracketRounds(allGames);

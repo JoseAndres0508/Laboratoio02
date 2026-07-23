@@ -17,6 +17,7 @@
     ]);
   }
 
+  // Nombre de la sede.
   function stadiumTitle(s) { return s.name_en || ('Sede ' + s.id); }
 
   // Lista de partidos de una sede (o el mensaje local si /get/games falló).
@@ -32,6 +33,7 @@
     return list;
   }
 
+  // Tarjeta de una sede con sus partidos.
   function stadiumCard(s, gamesFailed, byStadium) {
     var card = el('div', { class: 'box stadium-section', dataset: { id: s.id } }, [
       el('h2', { class: 'title is-5 mb-1', text: stadiumTitle(s) }),
@@ -41,6 +43,7 @@
     return card;
   }
 
+  // Selector desplegable de estadios.
   function stadiumSelectField(stadiums) {
     var select = el('select', {});
     stadiums.forEach(function (s) { select.appendChild(el('option', { value: s.id, text: stadiumTitle(s) })); });
@@ -66,18 +69,21 @@
     return { setActive: setActive, goTo: goTo };
   }
 
+  // Lista de países con sedes.
   function countryList(stadiums) {
     var countries = [];
     stadiums.forEach(function (s) { var c = s.country_en || 'Otro'; if (countries.indexOf(c) < 0) countries.push(c); });
     return countries.sort();
   }
 
+  // Dibuja los chips de países.
   function drawCountryChips(row, countries, selected, onSelect) {
     row.innerHTML = '';
     row.appendChild(WC.ui.chip('Todos', selected === null, function () { onSelect(null); }));
     countries.forEach(function (c) { row.appendChild(WC.ui.chip(c, selected === c, function () { onSelect(c); })); });
   }
 
+  // Tarjeta de sede en la vista por país.
   function stadiumCountryCard(s, gamesFailed, byStadium) {
     var count = gamesFailed ? '—' : ((byStadium[s.id] || []).length);
     return el('div', { class: 'column is-one-third' }, [
@@ -121,12 +127,14 @@
     var byStadium = groupByStadium(gamesRes);
     var stale = stadiumsRes.stale || gamesRes.stale;
 
+    // Renderiza el modo elegido (recorrido o país).
     function render(mode) {
       body.innerHTML = '';
       if (stale) body.appendChild(WC.ui.staleBadge());
       if (mode === 'pais') renderByCountry(); else renderRecorrido();
     }
 
+    // Vista de recorrido con scroll propio.
     function renderRecorrido() {
       var select = stadiumSelectField(stadiums);
       var sections = el('section', { class: 'tour-scroll' });
@@ -138,6 +146,7 @@
       if (stadiums[0]) { select.input.value = stadiums[0].id; nav.setActive(stadiums[0].id); }
     }
 
+    // Vista de sedes filtradas por país.
     function renderByCountry() {
       var countries = countryList(stadiums), selected = null;
       var btnRow = el('div', { class: 'chips' });

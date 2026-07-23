@@ -12,11 +12,17 @@
   var MESES = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
   var MES_AB = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
+  // Convierte texto a fecha (o null).
   function toDate(s) { var d = new Date(s); return isNaN(d) ? null : d; }
+  // Clave numérica para ordenar por fecha.
   function orderKey(s) { var d = toDate(s); return d ? d.getTime() : Number.MAX_SAFE_INTEGER; }
+  // Hora HH:MM del partido (o vacío).
   function hourLabel(s) { var d = toDate(s); if (!d || (d.getHours() === 0 && d.getMinutes() === 0)) return ''; return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+  // Días que tiene un mes.
   function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  // Día de semana del 1.º (lunes=0).
   function firstDowMon(y, m) { return (new Date(y, m, 1).getDay() + 6) % 7; } // 0 = lunes
+  // Clave única de un día.
   function dayKey(y, m, d) { return y + '-' + m + '-' + d; }
 
   // ---------- Preparación de datos ----------
@@ -35,6 +41,7 @@
     return Object.keys(byKey).filter(function (k) { return byKey[k].games.length >= 2; })
       .sort(function (a, b) { return orderKey(byKey[a].ref) - orderKey(byKey[b].ref); });
   }
+  // Meses que contienen días activos.
   function monthsOf(byKey, activeKeys) {
     var months = [];
     activeKeys.forEach(function (k) {
@@ -43,6 +50,7 @@
     });
     return months;
   }
+  // ¿El día tiene 2+ partidos?
   function isActiveDay(byKey, y, m, d) { var o = byKey[dayKey(y, m, d)]; return !!(o && o.games.length >= 2); }
 
   // ---------- Construcción del calendario ----------
@@ -54,6 +62,7 @@
     if (active) cell.addEventListener('click', function () { onSelectDay(key); });
     return cell;
   }
+  // Construye un mes del calendario.
   function buildMonth(mm, byKey, selected, onSelectDay) {
     var box = el('div', { class: 'cal-month' }, [el('div', { class: 'cal-title', text: MESES[mm.m] + ' ' + mm.y })]);
     var grid = el('div', { class: 'cal-grid' });
@@ -65,6 +74,7 @@
     return box;
   }
 
+  // Tarjeta de un partido.
   function matchCard(g, nameOf) {
     var main = U.isFinished(g)
       ? (nameOf(g.home_team_id) + '  ' + g.home_score + ' - ' + g.away_score + '  ' + nameOf(g.away_team_id))
@@ -97,6 +107,7 @@
     if (gamesRes.stale || teamsRes.stale) root.insertBefore(WC.ui.staleBadge(), layout);
 
     var teamsIndex = U.indexById(U.asArray(teamsRes.ok ? teamsRes.data : []));
+    // Nombre del equipo por id.
     function nameOf(id) { return U.teamName(teamsIndex[id], id); }
 
     var byKey = groupByDay(gamesRes.data);
@@ -110,11 +121,14 @@
     var months = monthsOf(byKey, activeKeys);
     var selected = activeKeys[0];
 
+    // Selecciona un día y refresca.
     function onSelectDay(key) { selected = key; renderCalendar(); renderDay(); }
+    // Dibuja el calendario.
     function renderCalendar() {
       colA.innerHTML = '';
       months.forEach(function (mm) { colA.appendChild(buildMonth(mm, byKey, selected, onSelectDay)); });
     }
+    // Muestra los partidos del día.
     function renderDay() {
       colB.innerHTML = '';
       var o = byKey[selected], d = toDate(o.ref);

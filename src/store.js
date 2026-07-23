@@ -19,7 +19,9 @@
   WC.store = {
     // ---- Token JWT ----
     getToken: function () { return localStorage.getItem(TOKEN_KEY); },
+    // Guarda el token JWT.
     setToken: function (t) { localStorage.setItem(TOKEN_KEY, t); },
+    // Borra el token JWT (logout).
     clearToken: function () { localStorage.removeItem(TOKEN_KEY); },
 
     // ---- Caché por endpoint (modo offline) ----
@@ -32,6 +34,7 @@
         // Si el almacenamiento está lleno simplemente no cacheamos; no rompemos.
       }
     },
+    // Lee la respuesta cacheada de un endpoint.
     readCache: function (endpoint) {
       var raw = localStorage.getItem(CACHE_PREFIX + endpoint);
       if (!raw) return null;
@@ -40,6 +43,7 @@
 
     // ---- Preferencias persistentes ----
     setPref: function (key, value) { localStorage.setItem(PREF_PREFIX + key, value); },
+    // Lee una preferencia del usuario.
     getPref: function (key) { return localStorage.getItem(PREF_PREFIX + key); }
   };
 })(window.WC = window.WC || {});

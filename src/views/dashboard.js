@@ -9,6 +9,7 @@
   var el = WC.ui.el, U = WC.util, C = WC.colors;
   var FAV_KEY = 'favTeam', COL_KEY = 'favColor';
   var KO_LABEL = { r32: 'Dieciseisavos', r16: 'Octavos', qf: 'Cuartos', sf: 'Semifinales', third: '3.º puesto', final: 'Final' };
+  // Clave numérica para ordenar por fecha.
   function orderKey(s) { var d = new Date(s); return isNaN(d) ? 0 : d.getTime(); }
 
   // ¿El equipo perdió este partido de eliminatoria? (incluye penales)
@@ -19,12 +20,14 @@
     if (mine === opp) { var mp = Number(home ? g.home_penalty_score : g.away_penalty_score), op = Number(home ? g.away_penalty_score : g.home_penalty_score); return mp < op; }
     return false;
   }
+  // Texto de eliminación del equipo.
   function eliminationText(g, id, nameOf) {
     var home = g.home_team_id === id;
     var oppId = home ? g.away_team_id : g.home_team_id;
     var sc = (home ? g.home_score : g.away_score) + '-' + (home ? g.away_score : g.home_score);
     return { cls: 'st-elim', text: 'Eliminado por ' + nameOf(oppId) + ' · ' + (KO_LABEL[g.type] || 'Eliminatoria') + ' (' + sc + ')' };
   }
+  // ¿Ganó la final? (incluye penales).
   function wonFinal(fin, id) {
     var h = fin.home_team_id === id, mine = Number(h ? fin.home_score : fin.away_score), opp = Number(h ? fin.away_score : fin.home_score);
     var mp = Number(h ? fin.home_penalty_score : fin.away_penalty_score), op = Number(h ? fin.away_penalty_score : fin.home_penalty_score);
@@ -51,6 +54,7 @@
     ]);
   }
 
+  // Cabecera con bandera, nombre y grupo.
   function heroHeader(team, id) {
     var name = team ? team.name_en : ('Equipo ' + id);
     return el('div', { class: 'dash-hero' }, [
@@ -77,6 +81,7 @@
     s.style.setProperty('--drift', ((Math.random() * 2 - 1) * 60) + 'px');
     return s;
   }
+  // Fondo inmersivo de estadio.
   function buildAmbient() {
     var sparks = el('div', { class: 'amb-sparks' });
     for (var i = 0; i < 18; i++) sparks.appendChild(ambientSpark(i));
@@ -90,6 +95,7 @@
     ]);
   }
 
+  // Monta el dashboard del equipo favorito.
   async function mount(root) {
     root.appendChild(buildAmbient());
     var wrap = el('div', { class: 'dash-wrap' });
@@ -117,6 +123,7 @@
     var games = U.asArray(gamesRes.ok ? gamesRes.data : []);
     var groups = U.asArray(groupsRes.ok ? groupsRes.data : []);
     var teamsIndex = U.indexById(teams);
+    // Nombre del equipo por id.
     function nameOf(id) { return U.teamName(teamsIndex[id], id); }
 
     var select = el('select', {});
@@ -162,6 +169,7 @@
       confetti(card, [hex, '#ffffff', C.accentFor(hex, theme), '#FBCB3A'], champ ? 90 : 42);
     }
 
+    // Repinta la tarjeta del equipo.
     function renderPanel() {
       inner.innerHTML = '';
       if (!currentId) return;
@@ -174,6 +182,7 @@
       else renderGrupo();
     }
 
+    // Resumen: puntos, GF, GC y estado.
     function renderResumen() {
       var st = findStanding(groups, currentId);
       if (st) {
@@ -191,6 +200,7 @@
       inner.appendChild(el('div', { class: 'dash-status ' + s.cls, text: s.text }));
     }
 
+    // Lista los partidos del equipo.
     function renderPartidos() {
       if (!gamesRes.ok) { inner.appendChild(el('p', { class: 'has-text-danger', text: 'Partidos no disponibles.' })); return; }
       var mine = games.filter(function (g) { return g.home_team_id === currentId || g.away_team_id === currentId; });
@@ -204,6 +214,7 @@
       });
     }
 
+    // Tabla de posiciones del grupo.
     function renderGrupo() {
       var grp = groups.find(function (gr) { return (gr.teams || []).some(function (x) { return x.team_id === currentId; }); });
       if (!grp) { inner.appendChild(el('p', { class: 'has-text-grey', text: 'Grupo no disponible.' })); return; }
@@ -236,10 +247,12 @@
       return { cls: 'st-alive', text: 'Sigue en competencia' };
     }
 
+    // Busca la fila del equipo en los grupos.
     function findStanding(gs, id) {
       for (var i = 0; i < gs.length; i++) { var row = (gs[i].teams || []).find(function (t) { return t.team_id === id; }); if (row) return row; }
       return null;
     }
+    // Anima un número de 0 al valor.
     function countUp(node, target) {
       target = Number(target) || 0; var dur = 600, t0 = null;
       function step(ts) { if (!t0) t0 = ts; var p = Math.min((ts - t0) / dur, 1); node.textContent = Math.round(target * p); if (p < 1) requestAnimationFrame(step); }
@@ -252,6 +265,7 @@
     if (initial) { select.value = initial; selectTeam(initial); }
   }
 
+  // Crea una pieza de confeti.
   function confettiPiece(colors, i) {
     var p = WC.ui.el('div', { class: 'confetti-piece' });
     p.style.left = (Math.random() * 100) + '%';
@@ -262,6 +276,7 @@
     p.style.setProperty('--rot', (Math.random() * 720 - 360) + 'deg');
     return p;
   }
+  // Lanza confeti sobre un elemento.
   function confetti(host, colors, count) {
     colors = (colors && colors.length) ? colors : ['#FF6B35', '#0FB5A6', '#FBCB3A'];
     count = count || 52;

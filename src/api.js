@@ -32,6 +32,7 @@
     SESSION_EXPIRED: 'wc:session-expired'
   };
 
+  // Error HTTP con código de estado e info.
   WC.HttpError = function HttpError(status, info) {
     this.name = 'HttpError';
     this.message = 'HTTP ' + status;
@@ -40,14 +41,17 @@
   };
   WC.HttpError.prototype = Object.create(Error.prototype);
 
+  // Espera los milisegundos indicados (promesa).
   function sleep(ms) {
     return new Promise(function (resolve) { setTimeout(resolve, ms); });
   }
 
+  // Dispara un evento personalizado en window.
   function emit(name, detail) {
     window.dispatchEvent(new CustomEvent(name, { detail: detail }));
   }
 
+  // Cabecera Authorization con el token JWT.
   function authHeaders() {
     return { Authorization: 'Bearer ' + (WC.store.getToken() || '') };
   }
@@ -83,6 +87,7 @@
     throw new WC.HttpError(401, 'sesion-expirada');
   }
 
+  // Lee el cuerpo de una respuesta de error.
   async function readErrorBody(response) {
     try { return await response.text(); } catch (e) { return ''; }
   }
@@ -95,6 +100,7 @@
     return data;
   }
 
+  // Hace la petición GET con reintentos y JWT.
   async function request(endpoint) {
     var url = API_BASE + endpoint;
     var state = { retries: 0 };

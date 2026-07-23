@@ -5,8 +5,10 @@
  * ========================================================================== */
 (function (WC) {
   'use strict';
+  // Acota un valor entre un mínimo y un máximo.
   function clamp(v, a, b) { return Math.max(a, Math.min(b, v)); }
 
+  // Convierte color RGB a HSL.
   function rgbToHsl(r, g, b) {
     r /= 255; g /= 255; b /= 255;
     var mx = Math.max(r, g, b), mn = Math.min(r, g, b), h, s, l = (mx + mn) / 2;
@@ -21,6 +23,7 @@
     }
     return [h * 360, s * 100, l * 100];
   }
+  // Convierte color HSL a HEX.
   function hslToHex(h, s, l) {
     h = ((h % 360) + 360) % 360; s = clamp(s, 0, 100) / 100; l = clamp(l, 0, 100) / 100;
     var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2, r = 0, g = 0, b = 0;
@@ -29,18 +32,24 @@
     var to = function (v) { return ('0' + Math.round((v + m) * 255).toString(16)).slice(-2); };
     return '#' + to(r) + to(g) + to(b);
   }
+  // Convierte color HEX a RGB.
   function hexToRgb(hex) {
     hex = String(hex).replace('#', '');
     if (hex.length === 3) hex = hex.split('').map(function (c) { return c + c; }).join('');
     var n = parseInt(hex, 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
   }
+  // Devuelve el HSL de un color HEX.
   function hslOf(hex) { var r = hexToRgb(hex); return rgbToHsl(r[0], r[1], r[2]); }
 
   // Derivados legibles según el tema
   function textFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? hslToHex(c[0], clamp(c[1], 35, 70), 30) : hslToHex(c[0], clamp(c[1], 30, 60), 76); }
+  // Color de acento según el tema.
   function accentFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? hslToHex(c[0], clamp(c[1], 55, 90), 45) : hslToHex(c[0], clamp(c[1], 55, 90), 62); }
+  // Color de fondo tenue según el tema.
   function tintFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? hslToHex(c[0], clamp(c[1], 40, 70), 94) : hslToHex(c[0], clamp(c[1], 22, 45), 15); }
+  // Color interior de la tarjeta según el tema.
   function innerFor(hex, theme) { var c = hslOf(hex); return theme === 'light' ? '#ffffff' : hslToHex(c[0], clamp(c[1], 18, 40), 11); }
+  // Color de respaldo a partir del id del equipo.
   function fallbackHex(id) { var h = (parseInt(id, 10) * 137.508) % 360; return hslToHex(h, 65, 50); }
 
   // Dibuja la bandera 24x24 en un canvas y devuelve sus píxeles (RGBA).

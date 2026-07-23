@@ -16,6 +16,7 @@
   var viewRoot, tabList, themeBtn, logoutBtn, current = null;
   var tabsWrapEl, tabsBurgerEl;
 
+  // Cambia de pestaña y monta la vista.
   async function activate(tab) {
     current = tab;
     [].forEach.call(tabList.children, function (li) { li.classList.toggle('is-active', li._id === tab.id); });
@@ -30,9 +31,11 @@
       }
     }
   }
+  // Re-activa la pestaña actual.
   function reactivateCurrent() { activate(current || TABS[0]); }
 
 
+  // Cierra sesión y muestra el login.
   function doLogout() {
     WC.auth.logout();
     if (viewRoot) viewRoot.innerHTML = '';
@@ -40,27 +43,33 @@
     WC.ui.showAuthOverlay({ expired: false });
   }
 
+  // Muestra u oculta el botón Salir según la sesión.
   function refreshAuthUI() {
     if (logoutBtn) logoutBtn.style.display = WC.auth.isLoggedIn() ? '' : 'none';
   }
 
 
   var FONT_MIN = 80, FONT_MAX = 150, FONT_STEP = 10, FONT_DEFAULT = 100;
+  // Lee la escala de fuente guardada.
   function currentFontScale() {
     var v = parseInt(WC.store.getPref('fontScale'), 10);
     return isNaN(v) ? FONT_DEFAULT : Math.min(FONT_MAX, Math.max(FONT_MIN, v));
   }
+  // Aplica y guarda la escala de fuente.
   function applyFontScale(pct) {
     pct = Math.min(FONT_MAX, Math.max(FONT_MIN, pct));
     document.documentElement.style.fontSize = pct + '%';
     WC.store.setPref('fontScale', pct);
     return pct;
   }
+  // Cambia la escala de fuente.
   function changeFont(delta) { applyFontScale(currentFontScale() + delta); }
+  // Restablece la escala de fuente.
   function resetFont() { applyFontScale(FONT_DEFAULT); }
 
   // ---- Tema claro/oscuro ----
   function currentTheme() { return document.documentElement.getAttribute('data-theme') || 'dark'; }
+  // Actualiza el ícono del botón de tema.
   function refreshThemeBtn() {
     if (!themeBtn) return;
     var dark = currentTheme() === 'dark';
@@ -68,7 +77,9 @@
     themeBtn.appendChild(el('span', { class: 'icon' }, [el('i', { class: 'fas fa-' + (dark ? 'sun' : 'moon') })]));
     themeBtn.setAttribute('title', dark ? 'Cambiar a claro' : 'Cambiar a oscuro');
   }
+  // Aplica y guarda el tema claro/oscuro.
   function applyTheme(t) { document.documentElement.setAttribute('data-theme', t); WC.store.setPref('theme', t); refreshThemeBtn(); }
+  // Alterna entre tema claro y oscuro.
   function toggleTheme() {
     applyTheme(currentTheme() === 'dark' ? 'light' : 'dark');
     if (WC.applyFavTextColor) WC.applyFavTextColor(WC.store.getPref('favColor'));
@@ -86,6 +97,7 @@
     return el('div', { class: 'font-controls', role: 'group', 'aria-label': 'Tamaño de letra' }, [smaller, reset, bigger]);
   }
 
+  // Crea el botón de tema.
   function buildThemeButton() {
     themeBtn = el('button', { class: 'button is-dark is-small', 'aria-label': 'Cambiar tema' });
     themeBtn.addEventListener('click', toggleTheme);
@@ -102,6 +114,7 @@
     return logoutBtn;
   }
 
+  // Construye la cabecera (título + Salir + conexión).
   function buildHero() {
     // Solo Salir + estado de conexión quedan fijos junto al título; el resto
     // de opciones (letra/tema) se mueven al botón flotante de accesibilidad.
@@ -124,12 +137,14 @@
     fab.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
+  // Cierra el panel de accesibilidad al hacer clic fuera.
   function closeA11yPanelOnOutsideClick(e, fab, panel) {
     if (panel.classList.contains('is-hidden')) return;
     if (panel.contains(e.target) || fab.contains(e.target)) return;
     toggleA11yPanel(fab, panel);
   }
 
+  // Crea el botón flotante de accesibilidad y su panel.
   function buildAccessibilityFab() {
     var panel = el('div', { class: 'a11y-panel is-hidden' }, [
       el('span', { class: 'a11y-panel-label', text: 'Tamaño de letra' }),
@@ -145,6 +160,7 @@
     return el('div', { class: 'a11y-fab-wrap' }, [panel, fab]);
   }
 
+  // Crea una pestaña del menú.
   function buildTabItem(t) {
     var a = el('a', {}, [
       el('span', { class: 'icon is-small' }, [el('i', { class: 'fas fa-' + t.icon })]),
@@ -163,6 +179,7 @@
     tabsBurgerEl.setAttribute('aria-expanded', open ? 'true' : 'false');
   }
 
+  // Cierra el menú hamburguesa.
   function closeTabsMenu() {
     if (!tabsWrapEl || !tabsWrapEl.classList.contains('is-open')) return;
     tabsWrapEl.classList.remove('is-open');
@@ -170,6 +187,7 @@
     tabsBurgerEl.setAttribute('aria-expanded', 'false');
   }
 
+  // Crea el botón hamburguesa.
   function buildTabsBurger() {
     var b = el('button', {
       class: 'tabs-burger', 'aria-label': 'Abrir menú de secciones', 'aria-expanded': 'false'
@@ -178,6 +196,7 @@
     return b;
   }
 
+  // Construye la barra de pestañas con hamburguesa.
   function buildTabs() {
     tabList = el('ul');
     TABS.forEach(function (t) { tabList.appendChild(buildTabItem(t)); });
@@ -186,6 +205,7 @@
     return el('div', { class: 'container tabs-bar' }, [tabsBurgerEl, tabsWrapEl]);
   }
 
+  // Construye el pie de página.
   function buildFooter() {
     return el('footer', { class: 'app-footer' }, [
       el('div', { class: 'app-footer-stripe' }),
@@ -193,6 +213,7 @@
     ]);
   }
 
+  // Arma la estructura general de la página.
   function buildShell() {
     var topbar = el('div', { class: 'topbar' }, [buildHero(), buildTabs()]);
     viewRoot = el('div', { id: 'view-root' });
@@ -205,6 +226,7 @@
     refreshAuthUI();
   }
 
+  // Arranca la app.
   function start() {
     var saved = WC.store.getPref('theme');
     if (saved) document.documentElement.setAttribute('data-theme', saved);

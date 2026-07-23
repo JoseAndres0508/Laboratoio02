@@ -16,6 +16,7 @@
     ids.forEach(function (id) { head.appendChild(el('th', { text: label(id) })); });
     return el('thead', {}, [head]);
   }
+  // Crea una fila de la matriz de un grupo.
   function matrixRow(rowId, ids, label) {
     var tr = el('tr', {}, [el('th', { text: label(rowId) })]);
     ids.forEach(function (colId) {
@@ -24,6 +25,7 @@
     });
     return tr;
   }
+  // Marca una celda como jugada con su resultado.
   function patchCell(container, rowId, colId, text) {
     var cell = container.querySelector('[data-cell="' + rowId + '_' + colId + '"]');
     if (cell) { cell.textContent = text; cell.classList.add('played'); cell.classList.remove('pending'); }
@@ -49,6 +51,7 @@
     var groups = U.asArray(groupsRes.data);
     var games = U.asArray(gamesRes.ok ? gamesRes.data : []);
 
+    // Nombre corto del equipo.
     function label(id) { var t = teamsIndex[id]; return t ? (t.fifa_code || t.name_en || id) : id; }
     // Nombre del grupo, tolerante al nombre del campo (o desde los equipos).
     function groupName(grp) {
@@ -58,6 +61,7 @@
       var t = first && teamsIndex[first.team_id];
       return (t && t.groups) || '?';
     }
+    // Nombre de un lado en eliminatorias.
     function koName(g, side) {
       var nm = g[side + '_team_name_en']; if (nm && nm !== 'null') return nm;
       var t = teamsIndex[g[side + '_team_id']]; if (t) return t.name_en || t.fifa_code;
@@ -70,6 +74,7 @@
     var koRounds = KO_ORDER.filter(function (r) { return koByType[r[0]] && koByType[r[0]].length; });
 
     var filter = 'ALL';
+    // Dibuja los chips de filtro.
     function drawChips() {
       chipsRow.innerHTML = '';
       chipsRow.appendChild(WC.ui.chip('Todos', filter === 'ALL', function () { filter = 'ALL'; render(); }));
@@ -77,6 +82,7 @@
       koRounds.forEach(function (r) { chipsRow.appendChild(WC.ui.chip(r[1], filter === 'K:' + r[0], function () { filter = 'K:' + r[0]; render(); })); });
     }
 
+    // Renderiza matrices y/o rondas según el filtro.
     function render() {
       drawChips();
       container.innerHTML = '';
@@ -85,6 +91,7 @@
       patchGroups();
     }
 
+    // Construye la matriz 4x4 de un grupo.
     function buildMatrix(grp, name) {
       var ids = (grp.teams || []).map(function (t) { return t.team_id; });
       var table = el('table', { class: 'table is-bordered is-narrow matriz-table' });
@@ -95,6 +102,7 @@
       return el('div', { class: 'column is-half' }, [el('div', { class: 'box' }, [el('p', { class: 'title is-5 mb-3', text: 'Grupo ' + name }), table])]);
     }
 
+    // Lista los partidos de una ronda de eliminatoria.
     function buildRound(name, gs) {
       var list = el('div', { class: 'ko-grid' });
       gs.slice().sort(function (a, b) { return orderKey(a.local_date) - orderKey(b.local_date); }).forEach(function (g) {
@@ -119,6 +127,7 @@
         patchCell(container, g.away_team_id, g.home_team_id, g.away_score + ' - ' + g.home_score);
       });
     }
+    // Aviso cuando no hay resultados disponibles.
     function patchWarning() {
       var box = el('div', { class: 'notification is-warning is-light' });
       box.appendChild(el('span', { text: 'Resultados no disponibles: las celdas quedan en “Pendiente”. ' }));
